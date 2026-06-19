@@ -237,3 +237,25 @@ function stars(r) {
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function statusColor(s) { return s === 'active' ? 'var(--green)' : s === 'passive' ? 'var(--accent2)' : 'var(--red)'; }
 function statusLabel(s) { return s === 'active' ? 'Actively Looking' : s === 'passive' ? 'Passively Open' : 'Not Looking'; }
+
+/* ---------- COOKIE CONSENT ---------- */
+function wlCookieBanner() {
+  try { if (localStorage.getItem('wl_cookie_consent')) return; } catch (e) { return; }
+  if (document.getElementById('cookie-banner')) return;
+  const el = document.createElement('div');
+  el.className = 'cookie-banner';
+  el.id = 'cookie-banner';
+  el.innerHTML = `
+    <p>We use cookies and local storage to keep you signed in, remember your preferences, and improve WrenchLink. See our <a class="link-accent" href="legal.html#cookies">Cookie Policy</a>.</p>
+    <div class="actions">
+      <button class="btn-sm ghost" onclick="wlSetConsent('necessary')">Necessary only</button>
+      <button class="btn-sm" onclick="wlSetConsent('all')">Accept all</button>
+    </div>`;
+  document.body.appendChild(el);
+}
+function wlSetConsent(level) {
+  try { localStorage.setItem('wl_cookie_consent', level); } catch (e) {}
+  const el = document.getElementById('cookie-banner');
+  if (el) el.remove();
+}
+document.addEventListener('DOMContentLoaded', wlCookieBanner);

@@ -78,6 +78,7 @@
 
 <script src="assets/js/icons.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/billing.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/footer.js"></script>
 <script>
@@ -85,8 +86,17 @@ renderNav('pricing');
 renderFooter();
 function choosePlan(plan){
   const u = WL.get().user;
-  if (u && u.type === 'employer') { u.plan = plan; if(u.bizData) {} WL.set({user:u}); showToast(plan+' plan selected for '+u.company+'.'); setTimeout(()=>location.href='employer.html',800); }
-  else { ensureModal(); openModal('employer'); showToast('Create an employer account to pick the '+plan+' plan.'); }
+  if (u && u.type === 'employer') {
+    Billing.ensure();
+    Billing.changePlan(plan.toLowerCase());
+    showToast(plan+' plan selected for '+(u.company||'your shop')+'.');
+    setTimeout(()=>location.href='billing.html',800);
+  } else if (u && u.type === 'tech') {
+    showToast('You are on the Solo technician plan. Manage it in Billing.');
+    setTimeout(()=>location.href='billing.html',800);
+  } else {
+    ensureModal(); openModal('employer'); showToast('Create an employer account to pick the '+plan+' plan.');
+  }
 }
 </script>
 </body>

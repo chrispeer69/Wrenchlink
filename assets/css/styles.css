@@ -331,6 +331,11 @@ textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.5; }
 .modal-switch { font-size: 0.82rem; color: var(--muted); text-align: center; }
 .modal-switch a { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600; }
 
+/* ── COOKIE BANNER ── */
+.cookie-banner { position: fixed; left: 1.25rem; right: 1.25rem; bottom: 1.25rem; z-index: 2500; background: #fff; border: 1px solid var(--line-2); border-radius: var(--radius); box-shadow: var(--shadow-3); padding: 1rem 1.25rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; max-width: 740px; margin: 0 auto; }
+.cookie-banner p { font-size: 0.85rem; color: var(--text-dim); margin: 0; flex: 1; min-width: 240px; line-height: 1.5; }
+.cookie-banner .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
 /* ── TOAST ── */
 .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 3000; padding: 0.85rem 1.2rem; background: #fff; color: var(--text); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 500; transform: translateY(120px); opacity: 0; transition: all 0.26s; display: flex; align-items: center; gap: 0.6rem; max-width: 360px; box-shadow: var(--shadow-3); }
 .toast .ic { color: var(--green); font-size: 1.1rem; }

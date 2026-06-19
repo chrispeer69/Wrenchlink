@@ -16,22 +16,29 @@
   <div class="page-head">
     <div class="section-tag">Technician Vault</div>
     <h1>My <em>vault</em></h1>
-    <p>Your complete professional profile — certifications, specialties, work history, salary target, and availability. Everything an employer sees, all in one place.</p>
+    <p>Your complete professional profile — contact details, certifications, work history, education, references, salary target, and availability. Everything an employer sees, all in one place.</p>
   </div>
 
   <div class="stat-row" id="vault-stats"></div>
 
   <div class="app-layout">
-    <!-- RAIL NAV -->
     <aside class="app-rail">
       <div class="rail-title">My Vault</div>
       <div class="rail-group" id="vault-nav">
         <a class="sidebar-item active" data-sec="overview"><span class="icon" data-ic="folder"></span> Overview</a>
         <a class="sidebar-item" data-sec="profile"><span class="icon" data-ic="user"></span> Profile &amp; Skills</a>
+        <a class="sidebar-item" data-sec="contact"><span class="icon" data-ic="pin"></span> Contact &amp; Availability</a>
         <a class="sidebar-item" data-sec="certs"><span class="icon" data-ic="badge"></span> Certifications</a>
         <a class="sidebar-item" data-sec="history"><span class="icon" data-ic="briefcase"></span> Work History</a>
+        <a class="sidebar-item" data-sec="education"><span class="icon" data-ic="badge"></span> Education &amp; Training</a>
+        <a class="sidebar-item" data-sec="references"><span class="icon" data-ic="user"></span> References</a>
+        <a class="sidebar-item" data-sec="documents"><span class="icon" data-ic="folder"></span> Documents</a>
         <a class="sidebar-item" data-sec="apps"><span class="icon" data-ic="chat"></span> Applications</a>
         <a class="sidebar-item" data-sec="saved"><span class="icon" data-ic="heart"></span> Saved Jobs</a>
+      </div>
+      <div class="rail-title">Account</div>
+      <div class="rail-group">
+        <a class="sidebar-item" href="billing.html"><span class="icon" data-ic="card"></span> Billing &amp; Invoices</a>
       </div>
       <div class="rail-title">Availability</div>
       <div class="status-selector" id="vault-status">
@@ -56,7 +63,6 @@ renderNav();
 renderFooter();
 if (!requireRole('tech')) { /* guard handles redirect */ }
 
-// ---- vault data model (persisted on user object) ----
 function vault() {
   const u = WL.get().user;
   if (!u.vaultData) {
@@ -68,25 +74,53 @@ function vault() {
       salaryMin: 55, salaryTarget: 75, salaryMax: 110,
       skills: ['Engine Diagnostics','Brake Systems','Suspension','Electrical'],
       certs: [{ name:'ASE A1 — Engine Repair', exp:'2027' }],
-      history: [{ logo:'WL', company:'Current Shop', role:'Technician', years:'2022 – Present', loc: u.metro+', '+(u.metro?'OH':'') }],
+      history: [{ logo:'WL', company:'Current Shop', role:'Technician', years:'2022 – Present', loc: (u.metro||'')+', OH' }],
+      phone: '', altEmail: '',
+      shift: 'Day shift', relocate: 'No', notice: '2 weeks', license: 'Valid driver license',
+      ownTools: 'Yes',
+      education: [],
+      references: [],
+      documents: [],
     };
     WL.save();
   }
-  return u.vaultData;
+  const v = u.vaultData;
+  // backfill new fields for older saved vaults
+  ['phone','altEmail'].forEach(k=>{ if(v[k]===undefined) v[k]=''; });
+  if(v.shift===undefined) v.shift='Day shift';
+  if(v.relocate===undefined) v.relocate='No';
+  if(v.notice===undefined) v.notice='2 weeks';
+  if(v.license===undefined) v.license='Valid driver license';
+  if(v.ownTools===undefined) v.ownTools='Yes';
+  if(!v.education) v.education=[];
+  if(!v.references) v.references=[];
+  if(!v.documents) v.documents=[];
+  return v;
 }
 
 function initials(name){ return (name||'U').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
 
+// profile completeness
+function completeness() {
+  const v = vault(), u = WL.get().user;
+  const checks = [
+    !!u.name, !!v.title, v.headline && v.headline.length > 20, v.skills.length >= 3,
+    v.certs.length >= 1, v.history.length >= 1, !!v.phone, v.education.length >= 1,
+    v.references.length >= 1, v.documents.length >= 1, v.salaryTarget > 0,
+  ];
+  const done = checks.filter(Boolean).length;
+  return Math.round(done / checks.length * 100);
+}
+
 function renderStats() {
   const s = WL.get();
   document.getElementById('vault-stats').innerHTML = `
+    <div class="dash-stat"><div class="num">${completeness()}%</div><div class="lbl">Profile Complete</div></div>
     <div class="dash-stat"><div class="num">${s.appliedJobs.length}</div><div class="lbl">Applications Sent</div></div>
     <div class="dash-stat"><div class="num">${s.savedJobs.length}</div><div class="lbl">Saved Jobs</div></div>
-    <div class="dash-stat"><div class="num">${vault().certs.length}</div><div class="lbl">Certifications</div></div>
-    <div class="dash-stat"><div class="num">${vault().skills.length}</div><div class="lbl">Specializations</div></div>`;
+    <div class="dash-stat"><div class="num">${vault().certs.length}</div><div class="lbl">Certifications</div></div>`;
 }
 
-// availability buttons
 function paintStatus() {
   const st = WL.get().techStatus;
   document.querySelectorAll('#vault-status .status-btn').forEach(b => {
@@ -100,7 +134,6 @@ document.querySelectorAll('#vault-status .status-btn').forEach(b => b.addEventLi
   showToast('Availability set to ' + statusLabel(b.dataset.st) + '.');
 }));
 
-// section nav
 document.querySelectorAll('#vault-nav .sidebar-item').forEach(a => a.addEventListener('click', () => {
   document.querySelectorAll('#vault-nav .sidebar-item').forEach(x => x.classList.remove('active'));
   a.classList.add('active');
@@ -112,32 +145,38 @@ function renderSection(sec) {
   const main = document.getElementById('vault-main');
 
   if (sec === 'overview') {
+    const pct = completeness();
     main.innerHTML = `
       <div class="panel">
         <div class="profile-header">
           <div class="avatar-circle">${initials(u.name)}</div>
           <div class="profile-name">
             <h3>${escapeHtml(u.name)}</h3>
-            <p>${escapeHtml(v.title)} — ${u.metro} Pool</p>
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.4rem;">
-              <span style="color:var(--accent2);">${stars(v.rating)}</span>
+            <p>${escapeHtml(v.title)} — ${escapeHtml(u.metro||'')} Pool</p>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.4rem;flex-wrap:wrap;">
+              <span class="stars">${stars(v.rating)}</span>
               <span style="font-size:0.78rem;color:var(--muted);">${v.rating.toFixed(1)} · ${v.reviews} reviews</span>
               <span class="badge ${s.techStatus==='active'?'green':s.techStatus==='passive'?'yellow':'muted'}">${statusLabel(s.techStatus)}</span>
             </div>
           </div>
         </div>
-        <p style="color:var(--chrome);margin-top:1rem;line-height:1.6;">${escapeHtml(v.headline)}</p>
+        <p style="color:var(--text-dim);margin-top:1rem;line-height:1.6;">${escapeHtml(v.headline)}</p>
+        <div style="margin-top:1.25rem;">
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.35rem;"><span style="color:var(--text-dim);">Profile completeness</span><span style="color:var(--primary);font-weight:700;">${pct}%</span></div>
+          <div class="salary-track"><div class="salary-fill" style="width:${pct}%;background:${pct>=80?'var(--green)':'var(--accent)'};"></div></div>
+          ${pct<100?`<p style="font-size:0.78rem;color:var(--muted);margin-top:0.5rem;">Add contact info, education, references, and documents to reach 100% and rank higher with employers.</p>`:`<p style="font-size:0.78rem;color:var(--green);margin-top:0.5rem;">Your vault is complete — you'll surface higher in employer searches.</p>`}
+        </div>
       </div>
       <div class="panel">
         <div class="profile-section-title">Salary Expectation</div>
         <div class="salary-range"><div style="flex:1;">
-          <div class="salary-track"><div class="salary-fill" style="width:${Math.round((v.salaryTarget-v.salaryMin)/(v.salaryMax-v.salaryMin)*100)}%;"></div></div>
+          <div class="salary-track"><div class="salary-fill" style="width:${Math.round((v.salaryTarget-v.salaryMin)/Math.max(1,(v.salaryMax-v.salaryMin))*100)}%;"></div></div>
           <div class="salary-vals"><span>$${v.salaryMin}K</span><span style="color:var(--accent);font-weight:700;">$${v.salaryTarget}K target</span><span>$${v.salaryMax}K</span></div>
         </div></div>
       </div>
       <div class="panel">
         <div class="profile-section-title">Specializations</div>
-        <div class="skills-grid">${v.skills.map(sk=>`<span class="skill-tag highlight">${escapeHtml(sk)}</span>`).join('')}</div>
+        <div class="skills-grid">${v.skills.map(sk=>`<span class="skill-tag highlight">${escapeHtml(sk)}</span>`).join('')||'<span style="color:var(--muted);">None yet.</span>'}</div>
       </div>`;
     return;
   }
@@ -145,24 +184,24 @@ function renderSection(sec) {
   if (sec === 'profile') {
     main.innerHTML = `
       <div class="panel">
-        <div class="panel-head"><h2>Edit Profile</h2></div>
-        <div class="form-group"><label class="form-label">Professional Title</label><input class="form-input" id="e-title" value="${escapeHtml(v.title)}"></div>
-        <div class="form-group" style="margin-top:1rem;"><label class="form-label">Headline / Bio</label><textarea class="form-input" id="e-headline">${escapeHtml(v.headline)}</textarea></div>
+        <div class="panel-head"><h2>Edit profile</h2></div>
+        <div class="form-group"><label class="form-label">Professional title</label><input class="form-input" id="e-title" value="${escapeHtml(v.title)}"></div>
+        <div class="form-group" style="margin-top:1rem;"><label class="form-label">Headline / bio</label><textarea class="form-input" id="e-headline">${escapeHtml(v.headline)}</textarea></div>
         <div class="form-row" style="margin-top:1rem;">
-          <div class="form-group"><label class="form-label">Years Experience</label><input class="form-input" id="e-years" type="number" value="${v.yearsExp}"></div>
-          <div class="form-group"><label class="form-label">City Pool</label><select class="form-select" id="e-metro"></select></div>
+          <div class="form-group"><label class="form-label">Years experience</label><input class="form-input" id="e-years" type="number" value="${v.yearsExp}"></div>
+          <div class="form-group"><label class="form-label">City pool</label><select class="form-select" id="e-metro"></select></div>
         </div>
-        <div class="profile-section-title" style="margin-top:1.5rem;">Salary Target ($K)</div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Salary target ($K)</div>
         <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
           <div class="form-group"><label class="form-label">Min</label><input class="form-input" id="e-smin" type="number" value="${v.salaryMin}"></div>
           <div class="form-group"><label class="form-label">Target</label><input class="form-input" id="e-starget" type="number" value="${v.salaryTarget}"></div>
           <div class="form-group"><label class="form-label">Max</label><input class="form-input" id="e-smax" type="number" value="${v.salaryMax}"></div>
         </div>
-        <button class="btn-sm" style="margin-top:1.25rem;" onclick="saveProfile()">Save Profile</button>
+        <button class="btn-sm" style="margin-top:1.25rem;" onclick="saveProfile()">Save profile</button>
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Specializations</h2></div>
-        <div class="skills-grid" id="skill-edit">${v.skills.map((sk,i)=>`<span class="skill-tag highlight">${escapeHtml(sk)} <a class="link-accent" onclick="removeSkill(${i})" style="color:var(--accent);">✕</a></span>`).join('')}</div>
+        <div class="skills-grid" id="skill-edit">${v.skills.map((sk,i)=>`<span class="skill-tag highlight">${escapeHtml(sk)} <a class="link-accent" onclick="removeSkill(${i})">✕</a></span>`).join('')}</div>
         <div style="display:flex;gap:0.5rem;margin-top:1rem;max-width:360px;">
           <input class="form-input" id="new-skill" placeholder="Add a skill…">
           <button class="btn-sm" onclick="addSkill()">Add</button>
@@ -173,18 +212,45 @@ function renderSection(sec) {
     return;
   }
 
+  if (sec === 'contact') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><h2>Contact details</h2></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ct-phone" value="${escapeHtml(v.phone)}" placeholder="(614) 555-0142"></div>
+          <div class="form-group"><label class="form-label">Contact email</label><input class="form-input" id="ct-email" value="${escapeHtml(v.altEmail||u.email||'')}" placeholder="you@example.com"></div>
+        </div>
+        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Home city pool</label><select class="form-select" id="ct-metro"></select></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Availability &amp; preferences</h2></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Preferred shift</label><select class="form-select" id="ct-shift">${['Day shift','Evening shift','Overnight','Weekends','Flexible'].map(o=>`<option ${o===v.shift?'selected':''}>${o}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Willing to relocate</label><select class="form-select" id="ct-relocate">${['No','Yes','Within state','For the right role'].map(o=>`<option ${o===v.relocate?'selected':''}>${o}</option>`).join('')}</select></div>
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label class="form-label">Notice period</label><select class="form-select" id="ct-notice">${['Immediate','1 week','2 weeks','1 month'].map(o=>`<option ${o===v.notice?'selected':''}>${o}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Own tools</label><select class="form-select" id="ct-tools">${['Yes','Partial set','No'].map(o=>`<option ${o===v.ownTools?'selected':''}>${o}</option>`).join('')}</select></div>
+        </div>
+        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Driver license / CDL</label><input class="form-input" id="ct-license" value="${escapeHtml(v.license)}" placeholder="Valid driver license, CDL-A"></div>
+        <button class="btn-sm" style="margin-top:1.25rem;" onclick="saveContact()">Save contact &amp; availability</button>
+      </div>`;
+    document.getElementById('ct-metro').innerHTML = WL.cities().map(c=>`<option ${c.name===u.metro?'selected':''}>${c.name}</option>`).join('');
+    return;
+  }
+
   if (sec === 'certs') {
     main.innerHTML = `
       <div class="panel">
-        <div class="panel-head"><h2>Certifications &amp; Credentials</h2></div>
+        <div class="panel-head"><h2>Certifications &amp; credentials</h2></div>
         <div class="cert-list" id="cert-list">${v.certs.map((c,i)=>`
           <div class="cert-item"><span class="cert-icon">${iconSvg('badge')}</span><span class="cert-name">${escapeHtml(c.name)}</span><span class="cert-date">Exp. ${escapeHtml(c.exp)}</span><a class="link-accent" onclick="removeCert(${i})">Remove</a></div>`).join('')||'<p style="color:var(--muted);">No certifications yet.</p>'}</div>
-        <div class="profile-section-title" style="margin-top:1.5rem;">Add Certification</div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Add certification</div>
         <div class="form-row" style="grid-template-columns:2fr 1fr;">
-          <div class="form-group"><label class="form-label">Credential Name</label><input class="form-input" id="c-name" placeholder="ASE Master Technician (A1–A8)"></div>
+          <div class="form-group"><label class="form-label">Credential name</label><input class="form-input" id="c-name" placeholder="ASE Master Technician (A1–A8)"></div>
           <div class="form-group"><label class="form-label">Expires</label><input class="form-input" id="c-exp" placeholder="2027"></div>
         </div>
-        <button class="btn-sm" style="margin-top:1rem;" onclick="addCert()">Add Certification</button>
+        <button class="btn-sm" style="margin-top:1rem;" onclick="addCert()">Add certification</button>
       </div>`;
     return;
   }
@@ -192,38 +258,89 @@ function renderSection(sec) {
   if (sec === 'history') {
     main.innerHTML = `
       <div class="panel">
-        <div class="panel-head"><h2>Work History</h2></div>
+        <div class="panel-head"><h2>Work history</h2></div>
         <div style="display:flex;flex-direction:column;gap:0.6rem;" id="hist-list">${v.history.map((h,i)=>`
-          <div style="padding:0.75rem 1rem;background:var(--carbon);border-radius:var(--radius);border:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
+          <div style="padding:0.75rem 1rem;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--line);display:flex;gap:1rem;align-items:center;">
             <div class="shop-logo" style="width:40px;height:40px;">${h.logo}</div>
             <div style="flex:1;">
-              <div style="font-family:'Inter', sans-serif;font-weight:800;text-transform:uppercase;">${escapeHtml(h.company)} — ${escapeHtml(h.role)}</div>
+              <div style="font-weight:700;color:var(--text);">${escapeHtml(h.company)} — ${escapeHtml(h.role)}</div>
               <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(h.years)} · ${escapeHtml(h.loc)}</div>
             </div>
             <a class="link-accent" onclick="removeHist(${i})">Remove</a>
           </div>`).join('')||'<p style="color:var(--muted);">No work history yet.</p>'}</div>
-        <div class="profile-section-title" style="margin-top:1.5rem;">Add Position</div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Shop / Company</label><input class="form-input" id="h-company"></div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Add position</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Shop / company</label><input class="form-input" id="h-company"></div>
           <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="h-role"></div></div>
         <div class="form-row" style="margin-top:0.75rem;"><div class="form-group"><label class="form-label">Years (e.g. 2019–2024)</label><input class="form-input" id="h-years"></div>
           <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="h-loc"></div></div>
-        <button class="btn-sm" style="margin-top:1rem;" onclick="addHist()">Add Position</button>
+        <button class="btn-sm" style="margin-top:1rem;" onclick="addHist()">Add position</button>
+      </div>`;
+    return;
+  }
+
+  if (sec === 'education') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><h2>Education &amp; training</h2></div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;">${v.education.map((e,i)=>`
+          <div class="cert-item"><span class="cert-icon">${iconSvg('badge')}</span>
+            <span class="cert-name">${escapeHtml(e.program)} — ${escapeHtml(e.school)}</span>
+            <span class="cert-date">${escapeHtml(e.year)}</span><a class="link-accent" onclick="removeEdu(${i})">Remove</a></div>`).join('')||'<p style="color:var(--muted);">No education or training added yet.</p>'}</div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Add program</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Program / degree</label><input class="form-input" id="ed-program" placeholder="Automotive Technology, A.A.S."></div>
+          <div class="form-group"><label class="form-label">School</label><input class="form-input" id="ed-school" placeholder="Columbus State CC"></div></div>
+        <div class="form-group" style="margin-top:0.75rem;max-width:200px;"><label class="form-label">Year</label><input class="form-input" id="ed-year" placeholder="2018"></div>
+        <button class="btn-sm" style="margin-top:1rem;" onclick="addEdu()">Add program</button>
+      </div>`;
+    return;
+  }
+
+  if (sec === 'references') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><h2>Professional references</h2></div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;">${v.references.map((r,i)=>`
+          <div class="candidate-card">
+            <div class="cand-avatar">${initials(r.name)}</div>
+            <div class="cand-info"><div class="cand-name">${escapeHtml(r.name)}</div><div class="cand-role">${escapeHtml(r.relation)} · ${escapeHtml(r.contact)}</div></div>
+            <a class="link-accent" onclick="removeRef(${i})">Remove</a></div>`).join('')||'<p style="color:var(--muted);">No references added yet. Employers value 2–3 trade references.</p>'}</div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Add reference</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Name</label><input class="form-input" id="rf-name" placeholder="Dave Karras"></div>
+          <div class="form-group"><label class="form-label">Relationship</label><input class="form-input" id="rf-rel" placeholder="Former Shop Foreman"></div></div>
+        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Phone or email</label><input class="form-input" id="rf-contact" placeholder="(614) 555-0188"></div>
+        <button class="btn-sm" style="margin-top:1rem;" onclick="addRef()">Add reference</button>
+      </div>`;
+    return;
+  }
+
+  if (sec === 'documents') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><h2>Documents</h2></div>
+        <p style="color:var(--text-dim);font-size:0.88rem;margin-bottom:1rem;">Upload your résumé, certification cards, or a portfolio. (Demo: files are listed locally, not uploaded to a server.)</p>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;" id="doc-list">${v.documents.map((d,i)=>`
+          <div class="cert-item"><span class="cert-icon">${iconSvg('folder')}</span><span class="cert-name">${escapeHtml(d.name)}</span><span class="cert-date">${escapeHtml(d.type)}</span><a class="link-accent" onclick="removeDoc(${i})">Remove</a></div>`).join('')||'<p style="color:var(--muted);">No documents yet.</p>'}</div>
+        <div style="margin-top:1.25rem;display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;">
+          <input type="file" id="doc-file" style="display:none;" onchange="pickDoc(this)">
+          <button class="btn-sm" onclick="document.getElementById('doc-file').click()">${iconSvg('folder')} Choose file</button>
+          <span id="doc-chosen" style="font-size:0.85rem;color:var(--muted);">No file selected</span>
+        </div>
       </div>`;
     return;
   }
 
   if (sec === 'apps') {
     const jobs = WL.allJobs().filter(j => s.appliedJobs.includes(j.id));
-    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>My Applications</h2><a href="jobs.html" class="btn-sm ghost">Browse Jobs</a></div>
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>My applications</h2><a href="jobs.html" class="btn-sm ghost">Browse jobs</a></div>
       ${jobs.length ? `<table class="data-table"><thead><tr><th>Position</th><th>Shop</th><th>Pay</th><th>Status</th></tr></thead><tbody>${jobs.map(j=>`
-        <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(j.title)}</td><td>${escapeHtml(j.shop)}</td><td>$${j.payMin}K–$${j.payMax}K</td><td><span class="badge blue">Under Review</span></td></tr>`).join('')}</tbody></table>`
+        <tr><td style="color:var(--text);font-weight:600;">${escapeHtml(j.title)}</td><td>${escapeHtml(j.shop)}</td><td>$${j.payMin}K–$${j.payMax}K</td><td><span class="badge blue">Under review</span></td></tr>`).join('')}</tbody></table>`
       : `<div class="empty-state"><span class="emoji">${icon('chat')}</span><h3>No applications yet</h3><p>Head to the job browser and apply with one click.</p></div>`}</div>`;
     return;
   }
 
   if (sec === 'saved') {
     const jobs = WL.allJobs().filter(j => s.savedJobs.includes(j.id));
-    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Saved Jobs</h2><a href="jobs.html" class="btn-sm ghost">Browse Jobs</a></div>
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Saved jobs</h2><a href="jobs.html" class="btn-sm ghost">Browse jobs</a></div>
       ${jobs.length ? `<div class="job-listings">${jobs.map(j=>`
         <div class="job-card"><div class="shop-logo" style="background:${j.color};">${j.logo}</div>
         <div class="job-info"><div class="job-title">${escapeHtml(j.title)}</div><div class="job-shop">${escapeHtml(j.shop)} — ${escapeHtml(j.city)}</div>
@@ -246,12 +363,30 @@ function saveProfile() {
   v.salaryMax = +document.getElementById('e-smax').value || 0;
   WL.save(); renderStats(); showToast('Profile saved.'); renderNav();
 }
+function saveContact() {
+  const v = vault(), u = WL.get().user;
+  v.phone = document.getElementById('ct-phone').value;
+  v.altEmail = document.getElementById('ct-email').value;
+  u.metro = document.getElementById('ct-metro').value;
+  v.shift = document.getElementById('ct-shift').value;
+  v.relocate = document.getElementById('ct-relocate').value;
+  v.notice = document.getElementById('ct-notice').value;
+  v.ownTools = document.getElementById('ct-tools').value;
+  v.license = document.getElementById('ct-license').value;
+  WL.save(); renderStats(); showToast('Contact & availability saved.');
+}
 function addSkill(){ const i=document.getElementById('new-skill'); if(!i.value.trim())return; vault().skills.push(i.value.trim()); WL.save(); renderSection('profile'); renderStats(); }
 function removeSkill(i){ vault().skills.splice(i,1); WL.save(); renderSection('profile'); renderStats(); }
 function addCert(){ const n=document.getElementById('c-name').value.trim(), e=document.getElementById('c-exp').value.trim(); if(!n)return; vault().certs.push({name:n,exp:e||'—'}); WL.save(); renderSection('certs'); renderStats(); showToast('Certification added.'); }
 function removeCert(i){ vault().certs.splice(i,1); WL.save(); renderSection('certs'); renderStats(); }
-function addHist(){ const c=document.getElementById('h-company').value.trim(); if(!c)return; vault().history.push({logo:initials(c),company:c,role:document.getElementById('h-role').value||'Technician',years:document.getElementById('h-years').value||'—',loc:document.getElementById('h-loc').value||''}); WL.save(); renderSection('history'); showToast('Position added.'); }
-function removeHist(i){ vault().history.splice(i,1); WL.save(); renderSection('history'); }
+function addHist(){ const c=document.getElementById('h-company').value.trim(); if(!c)return; vault().history.push({logo:initials(c),company:c,role:document.getElementById('h-role').value||'Technician',years:document.getElementById('h-years').value||'—',loc:document.getElementById('h-loc').value||''}); WL.save(); renderSection('history'); renderStats(); showToast('Position added.'); }
+function removeHist(i){ vault().history.splice(i,1); WL.save(); renderSection('history'); renderStats(); }
+function addEdu(){ const p=document.getElementById('ed-program').value.trim(); if(!p)return; vault().education.push({program:p,school:document.getElementById('ed-school').value||'—',year:document.getElementById('ed-year').value||'—'}); WL.save(); renderSection('education'); renderStats(); showToast('Education added.'); }
+function removeEdu(i){ vault().education.splice(i,1); WL.save(); renderSection('education'); renderStats(); }
+function addRef(){ const n=document.getElementById('rf-name').value.trim(); if(!n)return; vault().references.push({name:n,relation:document.getElementById('rf-rel').value||'Reference',contact:document.getElementById('rf-contact').value||'—'}); WL.save(); renderSection('references'); renderStats(); showToast('Reference added.'); }
+function removeRef(i){ vault().references.splice(i,1); WL.save(); renderSection('references'); renderStats(); }
+function pickDoc(input){ const f=input.files[0]; if(!f)return; document.getElementById('doc-chosen').textContent=f.name; const ext=(f.name.split('.').pop()||'file').toUpperCase(); vault().documents.push({name:f.name,type:ext}); WL.save(); renderSection('documents'); renderStats(); showToast('Document added: '+f.name); }
+function removeDoc(i){ vault().documents.splice(i,1); WL.save(); renderSection('documents'); renderStats(); }
 
 if (WL.get().user && WL.get().user.type === 'tech') {
   renderStats(); paintStatus(); renderSection('overview');

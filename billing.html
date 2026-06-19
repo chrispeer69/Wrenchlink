@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billing & Invoices — WrenchLink</title>
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Account</div>
+    <h1>Billing &amp; <em>invoices</em></h1>
+    <p>Manage your subscription, payment method, and download monthly invoices. Charges recur automatically each month.</p>
+  </div>
+
+  <div id="billing-alert"></div>
+
+  <div class="app-layout">
+    <main>
+      <div class="panel" id="plan-panel"></div>
+      <div class="panel" id="pay-panel"></div>
+      <div class="panel" id="invoice-panel"></div>
+    </main>
+
+    <aside class="app-rail">
+      <div class="rail-title">Account</div>
+      <div class="rail-group" id="billing-rail"></div>
+      <div class="rail-title">Billing tools</div>
+      <button class="rail-reset" onclick="Billing.advanceMonth(); renderAll(); showToast('Advanced one billing cycle — new invoice generated.');" style="margin-top:0.4rem;">Advance billing month (demo)</button>
+      <p style="font-size:0.72rem;color:var(--muted);margin-top:0.6rem;line-height:1.4;">Demo control: simulates the monthly billing run so you can see recurring invoices accrue.</p>
+    </aside>
+  </div>
+</div>
+
+<!-- payment method modal -->
+<div class="modal-overlay" id="pm-modal" onclick="if(event.target.id==='pm-modal')closePm()">
+  <div class="modal">
+    <div class="modal-header"><h3>Payment method</h3><button class="modal-close" onclick="closePm()">✕</button></div>
+    <div class="modal-body">
+      <form onsubmit="return savePm(event)">
+        <div class="form-group"><label class="form-label">Name on card</label><input class="form-input" name="name" placeholder="Marcus Thompson" required></div>
+        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Card number</label><input class="form-input" name="number" placeholder="4242 4242 4242 4242" inputmode="numeric" required></div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label class="form-label">Expiry (MM/YY)</label><input class="form-input" name="exp" placeholder="08/28" required></div>
+          <div class="form-group"><label class="form-label">CVC</label><input class="form-input" name="cvc" placeholder="123" inputmode="numeric" required></div>
+        </div>
+        <button class="btn-submit" type="submit">Save card</button>
+        <p class="modal-switch" style="margin-top:0.75rem;">Demo only — no real card is processed or stored. Use any numbers.</p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- change plan modal -->
+<div class="modal-overlay" id="plan-modal" onclick="if(event.target.id==='plan-modal')closePlanModal()">
+  <div class="modal">
+    <div class="modal-header"><h3>Change plan</h3><button class="modal-close" onclick="closePlanModal()">✕</button></div>
+    <div class="modal-body" id="plan-modal-body"></div>
+  </div>
+</div>
+
+<!-- invoice modal -->
+<div class="modal-overlay" id="inv-modal" onclick="if(event.target.id==='inv-modal')closeInv()">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header"><h3>Invoice</h3><button class="modal-close" onclick="closeInv()">✕</button></div>
+    <div class="modal-body" id="inv-modal-body"></div>
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/billing.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav();
+renderFooter();
+
+// guard: members only
+(function(){
+  const u = WL.get().user;
+  if (!u) { document.querySelector('.app-layout').style.display='none'; showToast('Please sign in to view billing.', true); setTimeout(()=>{ensureModal();openModal('login');},300); return; }
+  if (u.type === 'admin') { window.location.href = 'admin.html'; return; }
+  Billing.ensure();
+  renderAll();
+})();
+
+function renderAll(){ renderRail(); renderPlan(); renderPay(); renderInvoices(); renderAlert(); }
+
+function renderRail(){
+  const u = WL.get().user;
+  const home = u.type === 'employer' ? 'employer.html' : 'vault.html';
+  const homeLabel = u.type === 'employer' ? 'Dashboard' : 'My Vault';
+  document.getElementById('billing-rail').innerHTML = `
+    <a class="sidebar-item" href="${home}"><span class="icon" data-ic="folder"></span> ${homeLabel}</a>
+    <a class="sidebar-item active"><span class="icon" data-ic="card"></span> Billing &amp; Invoices</a>
+    <a class="sidebar-item" href="pricing.html"><span class="icon" data-ic="list"></span> Compare plans</a>`;
+  applyIcons(document.getElementById('billing-rail'));
+}
+
+function renderAlert(){
+  const due = Billing.balanceDue();
+  const el = document.getElementById('billing-alert');
+  if (due > 0 && !Billing.paymentMethod()) {
+    el.innerHTML = `<div class="panel" style="border-color:var(--amber);background:rgba(200,129,10,0.06);display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem;">
+      <div><strong style="color:var(--amber);">${Billing.money(due)} due.</strong> <span style="color:var(--text-dim);">Add a payment method to settle your balance and enable automatic monthly billing.</span></div>
+      <button class="btn-sm" onclick="openPm()">Add payment method</button></div>`;
+  } else { el.innerHTML = ''; }
+}
+
+function renderPlan(){
+  const sub = Billing.sub();
+  const next = Billing.nextBillDate();
+  const statusMap = { active:['green','Active'], canceled:['muted','Canceled'], past_due:['yellow','Past due'] };
+  const [sc,sl] = statusMap[sub.status] || ['muted', sub.status];
+  const u = WL.get().user;
+  document.getElementById('plan-panel').innerHTML = `
+    <div class="panel-head"><h2>Subscription</h2><span class="badge ${sc}">${sl}</span></div>
+    <div style="display:flex;align-items:baseline;gap:0.6rem;flex-wrap:wrap;">
+      <div style="font-size:2rem;font-weight:800;color:var(--primary);letter-spacing:-0.03em;">${Billing.money(sub.price)}<span style="font-size:1rem;color:var(--muted);font-weight:400;">/mo</span></div>
+      <div style="font-size:1.05rem;font-weight:700;color:var(--text);">${sub.planName} plan</div>
+    </div>
+    <div style="display:flex;gap:2rem;margin-top:1rem;flex-wrap:wrap;color:var(--text-dim);font-size:0.9rem;">
+      <div><div style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:0.2rem;">Member since</div>${Billing.fmtDate(sub.startDate)}</div>
+      <div><div style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:0.2rem;">${sub.status==='canceled'?'Ends':'Next charge'}</div>${next?Billing.fmtDate(next)+' · '+Billing.money(sub.price):'—'}</div>
+    </div>
+    <div style="display:flex;gap:0.6rem;margin-top:1.25rem;flex-wrap:wrap;">
+      ${u.type==='employer' ? `<button class="btn-sm ghost" onclick="openPlanModal()">Change plan</button>` : ''}
+      ${sub.status==='canceled'
+        ? `<button class="btn-sm" onclick="Billing.reactivate();renderAll();showToast('Subscription reactivated.')">Reactivate</button>`
+        : `<button class="btn-sm ghost" onclick="if(confirm('Cancel your subscription? Access continues until the end of the billing period.')){Billing.cancel();renderAll();showToast('Subscription canceled.');}">Cancel subscription</button>`}
+    </div>`;
+}
+
+function renderPay(){
+  const pm = Billing.paymentMethod();
+  document.getElementById('pay-panel').innerHTML = `
+    <div class="panel-head"><h2>Payment method</h2><button class="btn-sm ghost" onclick="openPm()">${pm?'Update':'Add'} card</button></div>
+    ${pm
+      ? `<div style="display:flex;align-items:center;gap:0.85rem;">
+           <span class="ic" style="font-size:1.4rem;color:var(--primary);">${iconSvg('card')}</span>
+           <div><div style="font-weight:600;color:var(--text);">${pm.brand} •••• ${pm.last4}</div>
+           <div style="font-size:0.82rem;color:var(--muted);">Expires ${pm.exp} · ${escapeHtml(pm.name)}</div></div>
+         </div>`
+      : `<p style="color:var(--text-dim);">No payment method on file. Add a card to enable automatic monthly billing.</p>`}`;
+}
+
+function renderInvoices(){
+  const invs = Billing.invoices();
+  document.getElementById('invoice-panel').innerHTML = `
+    <div class="panel-head"><h2>Invoice history</h2><span style="font-size:0.82rem;color:var(--muted);">${invs.length} invoice${invs.length===1?'':'s'}</span></div>
+    ${invs.length ? `<table class="data-table"><thead><tr><th>Invoice</th><th>Date</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+      ${invs.map(i=>`<tr>
+        <td style="color:var(--text);font-weight:600;">${i.id}</td>
+        <td>${Billing.fmtDate(i.date)}</td>
+        <td>${escapeHtml(i.description)}</td>
+        <td>${Billing.money(i.amount)}</td>
+        <td><span class="badge ${i.status==='paid'?'green':'yellow'}">${i.status==='paid'?'Paid':'Due'}</span></td>
+        <td><a class="link-accent" onclick="viewInvoice('${i.id}')">View</a>${i.status==='due'?` · <a class="link-accent" onclick="Billing.payInvoice('${i.id}');renderAll();showToast('Invoice paid.')">Pay</a>`:''}</td>
+      </tr>`).join('')}
+      </tbody></table>`
+    : `<div class="empty-state"><span class="emoji">${icon('card')}</span><h3>No invoices yet</h3><p>Your first invoice will appear at the start of your billing cycle.</p></div>`}`;
+}
+
+/* ----- payment modal ----- */
+function openPm(){ document.getElementById('pm-modal').classList.add('open'); }
+function closePm(){ document.getElementById('pm-modal').classList.remove('open'); }
+function savePm(e){
+  e.preventDefault();
+  const f = e.target;
+  const num = f.number.value.replace(/\D/g,'');
+  const last4 = num.slice(-4) || '0000';
+  const first = num[0];
+  const brand = first==='4'?'Visa':first==='5'?'Mastercard':first==='3'?'Amex':'Card';
+  Billing.setPaymentMethod({ brand, last4, exp: f.exp.value, name: f.name.value });
+  closePm(); renderAll(); showToast('Payment method saved. Outstanding balance settled.');
+  return false;
+}
+
+/* ----- change plan modal ----- */
+function openPlanModal(){
+  const u = WL.get().user, cur = Billing.sub();
+  const plans = Object.values(BILLING_PLANS).filter(p => p.audience === (u.type==='tech'?'tech':'employer'));
+  document.getElementById('plan-modal-body').innerHTML = plans.map(p=>`
+    <div class="job-card" style="align-items:center;">
+      <div class="job-info"><div class="job-title">${p.name}</div><div class="job-shop">${p.blurb}</div></div>
+      <div style="text-align:right;"><div style="font-weight:700;color:var(--primary);">${p.id==='enterprise'?'Custom':Billing.money(p.price)+'/mo'}</div>
+      ${cur.planId===p.id?`<span class="badge muted" style="margin-top:0.3rem;">Current</span>`:`<button class="btn-sm" style="margin-top:0.3rem;" onclick="Billing.changePlan('${p.id}');closePlanModal();renderAll();showToast('Plan changed to ${p.name}.');">Choose</button>`}</div>
+    </div>`).join('');
+  document.getElementById('plan-modal').classList.add('open');
+}
+function closePlanModal(){ document.getElementById('plan-modal').classList.remove('open'); }
+
+/* ----- invoice view ----- */
+function viewInvoice(id){
+  const i = Billing.invoices().find(x=>x.id===id); if(!i) return;
+  const u = WL.get().user;
+  const billTo = u.type==='employer' ? (u.company||u.name) : u.name;
+  document.getElementById('inv-modal-body').innerHTML = `
+    <div id="inv-print" style="background:#fff;color:#1b2230;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+        <div><div style="font-size:1.3rem;font-weight:800;color:var(--primary);">WRENCH<span style="color:var(--accent);">LINK</span></div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">WrenchLink, Inc.<br>1 Industry Way, Columbus, OH 43215<br>billing@wrenchlink.io</div></div>
+        <div style="text-align:right;"><div style="font-weight:700;font-size:1.05rem;">Invoice</div>
+        <div style="font-size:0.82rem;color:var(--muted);">${i.id}</div>
+        <div style="margin-top:0.4rem;"><span class="badge ${i.status==='paid'?'green':'yellow'}">${i.status==='paid'?'Paid':'Due'}</span></div></div>
+      </div>
+      <div style="display:flex;gap:2rem;margin-top:1.25rem;font-size:0.84rem;flex-wrap:wrap;">
+        <div><div style="color:var(--muted);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.04em;">Billed to</div><div style="font-weight:600;margin-top:0.2rem;">${escapeHtml(billTo)}</div><div style="color:var(--text-dim);">${escapeHtml(u.email||'')}</div></div>
+        <div><div style="color:var(--muted);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.04em;">Issue date</div><div style="margin-top:0.2rem;">${Billing.fmtDate(i.date)}</div></div>
+        <div><div style="color:var(--muted);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.04em;">Billing period</div><div style="margin-top:0.2rem;">${Billing.fmtDate(i.periodStart)} – ${Billing.fmtDate(i.periodEnd)}</div></div>
+      </div>
+      <table class="data-table" style="margin-top:1.25rem;"><thead><tr><th>Description</th><th style="text-align:right;">Amount</th></tr></thead>
+        <tbody><tr><td>${escapeHtml(i.description)}</td><td style="text-align:right;">${Billing.money(i.amount)}</td></tr>
+        <tr><td style="text-align:right;font-weight:700;color:var(--text);">Total</td><td style="text-align:right;font-weight:800;color:var(--primary);">${Billing.money(i.amount)}</td></tr></tbody></table>
+      <p style="font-size:0.76rem;color:var(--muted);margin-top:1rem;">${i.status==='paid'?('Paid '+Billing.fmtDate(i.paidDate)+'. Thank you.'):'Payment due on receipt.'} Questions? billing@wrenchlink.io</p>
+    </div>
+    <button class="btn-sm" style="margin-top:1rem;" onclick="printInvoice()">${iconSvg('arrow')} Print / Save PDF</button>`;
+  document.getElementById('inv-modal').classList.add('open');
+  applyIcons(document.getElementById('inv-modal-body'));
+}
+function closeInv(){ document.getElementById('inv-modal').classList.remove('open'); }
+function printInvoice(){
+  const html = document.getElementById('inv-print').innerHTML;
+  const w = window.open('', '_blank', 'width=720,height=900');
+  w.document.write('<html><head><title>WrenchLink Invoice</title><style>body{font-family:Inter,Arial,sans-serif;padding:40px;color:#1b2230;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{padding:8px;border-bottom:1px solid #e4e7ec;text-align:left;font-size:14px;}.badge{padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600;}.green{background:#e6f4ec;color:#15915b;}.yellow{background:#fbf1dc;color:#c8810a;}</style></head><body>'+html+'</body></html>');
+  w.document.close(); w.focus(); setTimeout(()=>w.print(), 300);
+}
+</script>
+</body>
+</html>

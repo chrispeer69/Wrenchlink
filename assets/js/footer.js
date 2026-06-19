@@ -27,13 +27,19 @@ function renderFooter() {
         <h5>Company</h5>
         <a href="index.html#how-it-works">How It Works</a>
         <a href="pricing.html">Pricing</a>
-        <a href="admin.html">Admin</a>
-        <a href="#" onclick="showToast('Privacy policy — coming soon.');return false;">Privacy Policy</a>
+        <a href="legal.html#terms">Terms of Service</a>
+        <a href="legal.html#privacy">Privacy Policy</a>
+        <a href="admin.html">Admin Console</a>
       </div>
     </div>
     <div class="footer-bottom">
       <p>© 2026 WrenchLink, Inc. All rights reserved.</p>
-      <div class="footer-tagline">BUILT FOR THE TRADE. BY PEOPLE WHO RESPECT IT.</div>
+      <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+        <a href="legal.html#terms" style="font-size:0.8rem;color:var(--muted);text-decoration:none;">Terms</a>
+        <a href="legal.html#privacy" style="font-size:0.8rem;color:var(--muted);text-decoration:none;">Privacy</a>
+        <a href="legal.html#cookies" style="font-size:0.8rem;color:var(--muted);text-decoration:none;">Cookies</a>
+        <a href="legal.html#billing" style="font-size:0.8rem;color:var(--muted);text-decoration:none;">Billing</a>
+      </div>
     </div>
   </footer>`;
 }
