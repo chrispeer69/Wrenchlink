@@ -16,7 +16,7 @@
   <div class="page-head">
     <div class="section-tag">Master Admin Console</div>
     <h1>Platform <em>control</em></h1>
-    <p>Manage every employer and technician on WrenchLink, oversee paid subscriptions, and monitor platform health from a single back end.</p>
+    <p>Full oversight of every employer and technician — profiles, job listings, plans, payment methods, and invoices. Add, edit, and manage any account.</p>
   </div>
 
   <div class="stat-row" id="admin-stats"></div>
@@ -42,13 +42,14 @@
 
 <script src="assets/js/icons.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/billing.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/footer.js"></script>
 <script>
 renderNav();
 renderFooter();
 
-// ---- admin guard (allow admin; offer quick admin sign-in otherwise) ----
+// ---- admin guard (dev mode opens it; otherwise quick admin sign-in) ----
 const _u = WL_DEV ? wlDevEnsure('admin') : WL.get().user;
 if (!WL_DEV && (!_u || _u.type !== 'admin')) {
   document.querySelector('.page').innerHTML = `
@@ -58,7 +59,6 @@ if (!WL_DEV && (!_u || _u.type !== 'admin')) {
       <div class="form-group"><label class="form-label">Admin Email</label><input class="form-input" id="adm-email" value="admin@wrenchlink.io"></div>
       <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Password</label><input class="form-input" id="adm-pass" type="password" value="demo"></div>
       <button class="btn-sm" style="margin-top:1rem;" onclick="adminLogin()">Enter Console →</button>
-      <p style="color:var(--muted);font-size:0.8rem;margin-top:1rem;">Demo: any password works. Email must be <strong style="color:var(--chrome);">admin@wrenchlink.io</strong>.</p>
     </div>`;
 }
 function adminLogin(){
@@ -68,39 +68,98 @@ function adminLogin(){
   location.reload();
 }
 
-// ---- seed member directory (persisted so admin actions stick) ----
+/* ============================================================
+   MEMBER DIRECTORY (seed v2 — enriched, persisted)
+   ============================================================ */
 function members() {
   const s = WL.get();
-  if (!s.members) {
-    const empSeed = [
-      { id:'e1', company:'Apex Body & Auto', type:'Auto Body / Collision Shop', metro:'Columbus', plan:'Pro', price:249, status:'active', joined:'2025-08-14', postings:3 },
-      { id:'e2', company:'Summit Collision Center', type:'Auto Body / Collision Shop', metro:'Columbus', plan:'Starter', price:99, status:'active', joined:'2025-11-02', postings:1 },
-      { id:'e3', company:'Precision Motors', type:'Dealership Service Dept.', metro:'Columbus', plan:'Pro', price:249, status:'active', joined:'2025-09-21', postings:2 },
-      { id:'e4', company:'Cleveland Auto Group', type:'Multi-Location Group', metro:'Cleveland', plan:'Enterprise', price:1200, status:'active', joined:'2025-06-30', postings:14 },
-      { id:'e5', company:'GearHead Transmissions', type:'Auto Repair Shop', metro:'Atlanta', plan:'Pro', price:249, status:'past_due', joined:'2026-01-11', postings:2 },
-      { id:'e6', company:'Dallas Drive Auto', type:'Auto Repair Shop', metro:'Dallas', plan:'Starter', price:99, status:'active', joined:'2026-02-19', postings:1 },
-      { id:'e7', company:'Heartland Fleet Services', type:'Fleet Maintenance', metro:'Columbus', plan:'Pro', price:249, status:'canceled', joined:'2025-10-08', postings:0 },
-    ];
-    const techSeed = WL_SEED_CANDIDATES.map((c,i) => ({
-      id:'t'+(i+1), name:c.name, role:c.role, metro:c.metro, status:c.status,
-      plan:'Solo', price:9.95, joined:['2025-07-12','2025-08-30','2025-09-15','2025-10-22','2025-11-19','2025-12-05','2026-01-28','2026-02-14'][i], rating:c.rating,
-    }));
-    s.members = { employers: empSeed, techs: techSeed };
+  if (!s.members || s.membersVersion !== 2) {
+    s.members = {
+      employers: [
+        { id:'e1', company:'Apex Body & Auto', type:'Auto Body / Collision Shop', metro:'Columbus', plan:'Pro', price:249, status:'active', joined:'2025-08-14',
+          address:'2200 Westerville Rd, Columbus, OH 43224', phone:'(614) 555-0142', website:'apexbodyauto.com', size:'16–40 employees', color:'#c2602b',
+          description:'Family-owned collision and mechanical shop serving Columbus for 18 years. I-CAR Gold certified with climate-controlled booths and modern frame equipment.',
+          perks:['Tool allowance','Paid ASE testing','Health insurance','401(k) match'],
+          paymentMethod:{ brand:'Visa', last4:'4242', exp:'08/27', name:'Dana Reyes' }, addedJobs:[] },
+        { id:'e2', company:'Summit Collision Center', type:'Auto Body / Collision Shop', metro:'Columbus', plan:'Starter', price:99, status:'active', joined:'2025-11-02',
+          address:'480 Metro Pl S, Dublin, OH 43017', phone:'(614) 555-0110', website:'summitcollision.com', size:'5–15 employees', color:'#2f7d6b',
+          description:'High-volume DRP collision center. Waterborne refinish, ADAS calibration, and a clean, well-lit shop floor.',
+          perks:['Signing bonus','Paid time off','Uniforms provided'],
+          paymentMethod:{ brand:'Mastercard', last4:'5588', exp:'03/28', name:'Leah Summit' }, addedJobs:[] },
+        { id:'e3', company:'Precision Motors', type:'Dealership Service Dept.', metro:'Columbus', plan:'Pro', price:249, status:'active', joined:'2025-09-21',
+          address:'9000 Auto Mall Dr, Columbus, OH 43240', phone:'(614) 555-0190', website:'precisionmotors.com', size:'40+ employees', color:'#5b4a6b',
+          description:'Franchise dealership service department with OEM training pathways, EV program, and flat-rate plus guarantee.',
+          perks:['OEM training','EV certification','Medical / dental / vision','Paid holidays'],
+          paymentMethod:{ brand:'Visa', last4:'1881', exp:'11/26', name:'Greg Hahn' }, addedJobs:[] },
+        { id:'e4', company:'Cleveland Auto Group', type:'Multi-Location Group', metro:'Cleveland', plan:'Enterprise', price:1200, status:'active', joined:'2025-06-30',
+          address:'1500 Euclid Ave, Cleveland, OH 44115', phone:'(216) 555-0133', website:'clevelandautogroup.com', size:'40+ employees', color:'#3a6ea5',
+          description:'Six-rooftop dealer group hiring across service and collision. Centralized recruiting with branded employer profile and ATS integration.',
+          perks:['Relocation assistance','Tuition reimbursement','Full benefits','Pension'],
+          paymentMethod:{ brand:'Amex', last4:'3007', exp:'05/27', name:'Cleveland Auto Group LLC' }, addedJobs:[] },
+        { id:'e5', company:'GearHead Transmissions', type:'Auto Repair Shop', metro:'Atlanta', plan:'Pro', price:249, status:'past_due', joined:'2026-01-11',
+          address:'77 Peachtree Industrial, Atlanta, GA 30341', phone:'(404) 555-0176', website:'gearheadtrans.com', size:'5–15 employees', color:'#a8503c',
+          description:'Specialty transmission shop with steady volume and excellent flat-rate hours. Rebuild and R&R across automatic and CVT units.',
+          perks:['Performance bonus','Tool truck account','Paid time off'],
+          paymentMethod:{ brand:'Visa', last4:'9921', exp:'02/26', name:'Andre Wallace' }, addedJobs:[] },
+        { id:'e6', company:'Dallas Drive Auto', type:'Auto Repair Shop', metro:'Dallas', plan:'Starter', price:99, status:'active', joined:'2026-02-19',
+          address:'3100 Maple Ave, Dallas, TX 75201', phone:'(214) 555-0155', website:'dallasdriveauto.com', size:'1–4 employees', color:'#357a8a',
+          description:'Growing independent shop with a paid apprenticeship pipeline and a supportive, mentorship-driven culture.',
+          perks:['Apprenticeship','Tuition assistance','Flexible scheduling'],
+          paymentMethod:{ brand:'Mastercard', last4:'4410', exp:'09/27', name:'Maria Lopez' }, addedJobs:[] },
+        { id:'e7', company:'Heartland Fleet Services', type:'Fleet Maintenance', metro:'Columbus', plan:'Pro', price:249, status:'canceled', joined:'2025-10-08',
+          address:'650 Frank Rd, Grove City, OH 43123', phone:'(614) 555-0102', website:'heartlandfleet.com', size:'16–40 employees', color:'#49546a',
+          description:'Medium-duty fleet maintenance operation. Brakes, DPF, electrical, and PM service with tool and boot stipends.',
+          perks:['Tool allowance','Boot stipend','Health insurance'],
+          paymentMethod:null, addedJobs:[] },
+      ],
+      techs: WL_SEED_CANDIDATES.map((c,i) => ({
+        id:'t'+(i+1), name:c.name, role:c.role, title:c.role, metro:c.metro, city:c.city, status:c.status,
+        exp:c.exp, rating:c.rating, reviews:c.reviews, type:c.type, color:c.color, initials:c.initials,
+        skills:c.tags.slice(), certs:[{ name:c.tags[0], exp:'2027' }],
+        phone:'(614) 555-0'+(200+i), email:c.name.toLowerCase().replace(/[^a-z]/g,'.')+'@demo.io',
+        plan:'Solo', price:9.95, status_:'active',
+        paymentMethod: i%4===3 ? null : { brand:['Visa','Mastercard','Visa','Amex'][i%4], last4:String(1000+i*7).slice(-4), exp:'0'+((i%9)+1)+'/28', name:c.name },
+        joined:['2025-07-12','2025-08-30','2025-09-15','2025-10-22','2025-11-19','2025-12-05','2026-01-28','2026-02-14'][i],
+        invoices:null,
+      })),
+    };
+    s.membersVersion = 2;
     WL.save();
   }
-  // fold in the locally-registered user, if any, so it shows in the directory
   return s.members;
 }
 
-function money(n){ return '$'+n.toLocaleString(); }
+const PLAN_PRICE = { Starter:99, Pro:249, Enterprise:1200 };
+function findEmp(id){ return members().employers.find(e=>e.id===id); }
+function findTech(id){ return members().techs.find(t=>t.id===id); }
+function seedJobsForShop(company){ return WL_SEED_JOBS.filter(j=>j.shop===company); }
+function empJobs(m){ return seedJobsForShop(m.company).concat(m.addedJobs||[]); }
+
+function ensureEmpInvoices(m){
+  if(!m.invoices){ m.invoices = Billing.genInvoices({ startISO:m.joined, price:m.price, planName:m.plan, hasCard:!!m.paymentMethod, status:m.status }); WL.save(); }
+  return m.invoices;
+}
+function ensureTechInvoices(m){
+  if(!m.invoices){ m.invoices = Billing.genInvoices({ startISO:m.joined, price:m.price, planName:'Solo', hasCard:!!m.paymentMethod, status:'active' }); WL.save(); }
+  return m.invoices;
+}
+function regenEmpInvoices(m){ m.invoices=null; ensureEmpInvoices(m); }
+function regenTechInvoices(m){ m.invoices=null; ensureTechInvoices(m); }
+
+function money(n){ return Billing.money(n); }
+function fmtDate(d){ return Billing.fmtDate(d); }
 function statusBadge(st){
   const map = { active:['green','Active'], past_due:['yellow','Past Due'], canceled:['muted','Canceled'], passive:['yellow','Passive'], notlooking:['muted','Off'] };
   const [c,l] = map[st] || ['muted', st]; return `<span class="badge ${c}">${l}</span>`;
 }
+function cardLine(pm){ return pm ? `${pm.brand} •••• ${pm.last4} · exp ${pm.exp}` : 'No card on file'; }
 
+/* ============================================================
+   STATS + NAV
+   ============================================================ */
 function renderStats(){
   const m = members();
-  const empMrr = m.employers.filter(e=>e.status==='active'||e.status==='past_due').reduce((a,e)=>a+e.price,0);
+  const empMrr = m.employers.filter(e=>e.status!=='canceled').reduce((a,e)=>a+e.price,0);
   const techMrr = m.techs.length * 9.95;
   const mrr = empMrr + techMrr;
   const activeSubs = m.employers.filter(e=>e.status==='active').length + m.techs.length;
@@ -110,79 +169,326 @@ function renderStats(){
     <div class="dash-stat"><div class="num">${activeSubs}</div><div class="lbl">Active Subscriptions</div></div>
     <div class="dash-stat"><div class="num">${m.techs.length}</div><div class="lbl">Technician Members</div></div>`;
 }
-
+let CURRENT_SEC = 'overview';
 document.querySelectorAll('#admin-nav .sidebar-item').forEach(a => a.addEventListener('click', () => {
   document.querySelectorAll('#admin-nav .sidebar-item').forEach(x=>x.classList.remove('active'));
   a.classList.add('active'); renderSection(a.dataset.sec);
 }));
+function setActiveNav(sec){ document.querySelectorAll('#admin-nav .sidebar-item').forEach(x=>x.classList.toggle('active', x.dataset.sec===sec)); }
 
+/* ============================================================
+   SECTION ROUTER
+   ============================================================ */
 function renderSection(sec){
+  CURRENT_SEC = sec;
   const m = members(), main = document.getElementById('admin-main');
 
   if (sec === 'overview') {
-    const byPlan = {};
-    m.employers.forEach(e => byPlan[e.plan] = (byPlan[e.plan]||0)+1);
     const empMrr = m.employers.filter(e=>e.status!=='canceled').reduce((a,e)=>a+e.price,0);
     const techMrr = m.techs.length * 9.95;
     const mrr = empMrr + techMrr;
     main.innerHTML = `
-      <div class="panel"><div class="panel-head"><h2>Revenue by Plan</h2></div>
-        <table class="data-table"><thead><tr><th>Plan</th><th>Subscribers</th><th>Unit Price</th><th>Plan MRR</th></tr></thead><tbody>
-          ${['Starter','Pro','Enterprise'].map(p=>{ const subs=m.employers.filter(e=>e.plan===p&&e.status!=='canceled'); const price=({Starter:99,Pro:249,Enterprise:1200})[p]; return `<tr><td style="color:var(--white);font-weight:600;">${p} (Employer)</td><td>${subs.length}</td><td>${money(price)}/mo</td><td style="color:var(--accent);font-weight:700;">${money(subs.length*price)}</td></tr>`; }).join('')}
-          <tr><td style="color:var(--white);font-weight:600;">Solo (Technician)</td><td>${m.techs.length}</td><td>$9.95/mo</td><td style="color:var(--accent);font-weight:700;">${money(Math.round(techMrr))}</td></tr>
+      <div class="panel"><div class="panel-head"><h2>Revenue by plan</h2></div>
+        <table class="data-table"><thead><tr><th>Plan</th><th>Subscribers</th><th>Unit price</th><th>Plan MRR</th></tr></thead><tbody>
+          ${['Starter','Pro','Enterprise'].map(p=>{ const subs=m.employers.filter(e=>e.plan===p&&e.status!=='canceled'); return `<tr><td style="color:var(--text);font-weight:600;">${p} (Employer)</td><td>${subs.length}</td><td>${money(PLAN_PRICE[p])}/mo</td><td style="color:var(--accent);font-weight:700;">${money(subs.length*PLAN_PRICE[p])}</td></tr>`; }).join('')}
+          <tr><td style="color:var(--text);font-weight:600;">Solo (Technician)</td><td>${m.techs.length}</td><td>$9.95/mo</td><td style="color:var(--accent);font-weight:700;">${money(Math.round(techMrr))}</td></tr>
           <tr><td colspan="3" style="text-align:right;color:var(--muted);">Total MRR</td><td style="color:var(--accent);font-weight:800;">${money(Math.round(mrr))}</td></tr>
         </tbody></table></div>
-      <div class="panel"><div class="panel-head"><h2>Attention Needed</h2></div>
-        ${m.employers.filter(e=>e.status==='past_due').map(e=>`<div class="candidate-card"><div class="cand-avatar" style="background:rgba(255,193,7,0.2);color:var(--accent2);">!</div><div class="cand-info"><div class="cand-name">${escapeHtml(e.company)}</div><div class="cand-role">${e.plan} plan · payment past due · ${money(e.price)}/mo</div></div><div class="cand-actions"><button class="cand-btn primary" onclick="setStatus('${e.id}','active')">Mark Paid</button></div></div>`).join('') || '<p style="color:var(--muted);">All subscriptions in good standing.</p>'}</div>`;
+      <div class="panel"><div class="panel-head"><h2>Needs attention</h2></div>
+        ${m.employers.filter(e=>e.status==='past_due').map(e=>`<div class="candidate-card"><div class="cand-avatar" style="background:var(--amber);">!</div><div class="cand-info"><div class="cand-name">${escapeHtml(e.company)}</div><div class="cand-role">${e.plan} plan · payment past due · ${money(e.price)}/mo · ${cardLine(e.paymentMethod)}</div></div><div class="cand-actions"><button class="cand-btn" onclick="openEmp('${e.id}')">Open</button><button class="cand-btn primary" onclick="empSetStatus('${e.id}','active',true)">Mark paid</button></div></div>`).join('') || '<p style="color:var(--muted);">All subscriptions in good standing.</p>'}</div>`;
     return;
   }
 
   if (sec === 'employers') {
-    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Employers (${m.employers.length})</h2><input class="search-input" id="emp-q" placeholder="Search employers…" style="max-width:220px;" oninput="renderSection('employers')"></div>
-      <table class="data-table"><thead><tr><th>Company</th><th>Type</th><th>Pool</th><th>Plan</th><th>MRR</th><th>Status</th><th>Actions</th></tr></thead><tbody id="emp-rows"></tbody></table></div>`;
-    const q=(document.getElementById('emp-q')?.value||'').toLowerCase();
-    document.getElementById('emp-rows').innerHTML = m.employers.filter(e=>(`${e.company} ${e.type} ${e.metro}`).toLowerCase().includes(q)).map(e=>`
-      <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(e.company)}</td><td>${escapeHtml(e.type)}</td><td>${e.metro}</td>
-      <td><select class="sort-select" onchange="setPlan('${e.id}',this.value)">${['Starter','Pro','Enterprise'].map(p=>`<option ${p===e.plan?'selected':''}>${p}</option>`).join('')}</select></td>
-      <td>${money(e.price)}</td><td>${statusBadge(e.status)}</td>
-      <td>${e.status==='active'?`<a class="link-accent" onclick="setStatus('${e.id}','canceled')">Suspend</a>`:`<a class="link-accent" onclick="setStatus('${e.id}','active')">Activate</a>`}</td></tr>`).join('');
+    const q=(window._empQ||'').toLowerCase();
+    const rows = m.employers.filter(e=>(`${e.company} ${e.type} ${e.metro}`).toLowerCase().includes(q));
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Employers (${m.employers.length})</h2>
+      <div style="display:flex;gap:0.5rem;"><input class="search-input" id="emp-q" placeholder="Search…" style="max-width:200px;" value="${escapeHtml(window._empQ||'')}" oninput="window._empQ=this.value;renderSection('employers');document.getElementById('emp-q').focus();">
+      <button class="btn-sm" onclick="addEmployerForm()">${iconSvg('plus')} Add employer</button></div></div>
+      <table class="data-table"><thead><tr><th>Company</th><th>Type</th><th>Pool</th><th>Plan</th><th>MRR</th><th>Jobs</th><th>Status</th><th></th></tr></thead><tbody>
+      ${rows.map(e=>`<tr style="cursor:pointer;" onclick="openEmp('${e.id}')">
+        <td style="color:var(--text);font-weight:600;">${escapeHtml(e.company)}</td><td>${escapeHtml(e.type)}</td><td>${e.metro}</td>
+        <td>${e.plan}</td><td>${money(e.price)}</td><td>${empJobs(e).length}</td><td>${statusBadge(e.status)}</td>
+        <td><a class="link-accent" onclick="event.stopPropagation();openEmp('${e.id}')">Manage</a></td></tr>`).join('')}
+      </tbody></table></div>`;
     return;
   }
 
   if (sec === 'techs') {
-    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Technicians (${m.techs.length})</h2><input class="search-input" id="tech-q" placeholder="Search technicians…" style="max-width:220px;" oninput="renderSection('techs')"></div>
-      <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Pool</th><th>Availability</th><th>Plan</th><th>Joined</th></tr></thead><tbody id="tech-rows"></tbody></table></div>`;
-    const q=(document.getElementById('tech-q')?.value||'').toLowerCase();
-    document.getElementById('tech-rows').innerHTML = m.techs.filter(t=>(`${t.name} ${t.role} ${t.metro}`).toLowerCase().includes(q)).map(t=>`
-      <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(t.name)}</td><td>${escapeHtml(t.role)}</td><td>${t.metro}</td>
-      <td>${statusBadge(t.status)}</td><td><span class="badge muted">${t.plan}</span></td><td>${t.joined}</td></tr>`).join('');
+    const q=(window._techQ||'').toLowerCase();
+    const rows = m.techs.filter(t=>(`${t.name} ${t.role} ${t.metro}`).toLowerCase().includes(q));
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Technicians (${m.techs.length})</h2>
+      <div style="display:flex;gap:0.5rem;"><input class="search-input" id="tech-q" placeholder="Search…" style="max-width:200px;" value="${escapeHtml(window._techQ||'')}" oninput="window._techQ=this.value;renderSection('techs');document.getElementById('tech-q').focus();">
+      <button class="btn-sm" onclick="addTechForm()">${iconSvg('plus')} Add technician</button></div></div>
+      <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Pool</th><th>Availability</th><th>Plan</th><th>Pays</th><th></th></tr></thead><tbody>
+      ${rows.map(t=>`<tr style="cursor:pointer;" onclick="openTech('${t.id}')">
+        <td style="color:var(--text);font-weight:600;">${escapeHtml(t.name)}</td><td>${escapeHtml(t.role)}</td><td>${t.metro}</td>
+        <td>${statusBadge(t.status)}</td><td><span class="badge muted">${t.plan}</span></td><td>${money(t.price)}/mo</td>
+        <td><a class="link-accent" onclick="event.stopPropagation();openTech('${t.id}')">Manage</a></td></tr>`).join('')}
+      </tbody></table></div>`;
     return;
   }
 
   if (sec === 'billing') {
-    const active = m.employers.filter(e=>e.status!=='canceled');
-    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Subscriptions &amp; Billing</h2></div>
-      <table class="data-table"><thead><tr><th>Account</th><th>Plan</th><th>Amount</th><th>Billing Status</th><th>Next Invoice</th><th></th></tr></thead><tbody>
-      ${active.map(e=>`<tr><td style="color:var(--white);font-weight:600;">${escapeHtml(e.company)}</td><td>${e.plan}</td><td>${money(e.price)}/mo</td><td>${statusBadge(e.status)}</td><td>${nextInvoice(e.joined)}</td>
-      <td>${e.status==='past_due'?`<a class="link-accent" onclick="setStatus('${e.id}','active')">Retry charge</a>`:`<a class="link-accent" onclick="setStatus('${e.id}','canceled')">Cancel</a>`}</td></tr>`).join('')}
-      </tbody></table>
-      <p style="color:var(--muted);font-size:0.82rem;margin-top:1rem;">Technician "Solo" accounts are billed $9.95/mo. Employer plans renew monthly. The table above lists employer subscriptions; technician billing is aggregated in Revenue by Plan.</p></div>`;
+    const all = m.employers.filter(e=>e.status!=='canceled');
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Subscriptions &amp; billing</h2></div>
+      <table class="data-table"><thead><tr><th>Account</th><th>Type</th><th>Plan</th><th>Amount</th><th>Payment method</th><th>Status</th><th></th></tr></thead><tbody>
+      ${all.map(e=>`<tr><td style="color:var(--text);font-weight:600;">${escapeHtml(e.company)}</td><td>Employer</td><td>${e.plan}</td><td>${money(e.price)}/mo</td><td>${cardLine(e.paymentMethod)}</td><td>${statusBadge(e.status)}</td><td><a class="link-accent" onclick="openEmp('${e.id}')">View</a></td></tr>`).join('')}
+      ${m.techs.map(t=>`<tr><td style="color:var(--text);font-weight:600;">${escapeHtml(t.name)}</td><td>Technician</td><td>Solo</td><td>${money(t.price)}/mo</td><td>${cardLine(t.paymentMethod)}</td><td>${statusBadge('active')}</td><td><a class="link-accent" onclick="openTech('${t.id}')">View</a></td></tr>`).join('')}
+      </tbody></table></div>`;
     return;
   }
 
   if (sec === 'pools') {
-    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>City Pool Activity</h2></div>
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>City pool activity</h2></div>
       <table class="data-table"><thead><tr><th>City Pool</th><th>Region</th><th>Technicians</th><th>Open Jobs</th><th>Employers</th></tr></thead><tbody>
-      ${WL.cities().map(c=>{ const emps=m.employers.filter(e=>e.metro===c.name&&e.status!=='canceled').length; return `<tr><td style="color:var(--white);font-weight:600;">${c.name}, ${c.state}</td><td>${c.region}</td><td>${c.techs}</td><td>${c.jobs}</td><td>${emps}</td></tr>`; }).join('')}
+      ${WL.cities().map(c=>{ const emps=m.employers.filter(e=>e.metro===c.name&&e.status!=='canceled').length; return `<tr><td style="color:var(--text);font-weight:600;">${c.name}, ${c.state}</td><td>${c.region}</td><td>${c.techs}</td><td>${c.jobs}</td><td>${emps}</td></tr>`; }).join('')}
       </tbody></table></div>`;
     return;
   }
 }
 
-function nextInvoice(joined){ const d=new Date(joined); const day=d.getDate(); const now=new Date('2026-06-19'); const nx=new Date(now.getFullYear(), now.getMonth()+(now.getDate()>=day?1:0), day); return nx.toISOString().slice(0,10); }
+/* ============================================================
+   EMPLOYER DETAIL (full drill-down)
+   ============================================================ */
+function openEmp(id){ setActiveNav('employers'); renderEmployerDetail(id); window.scrollTo(0,0); }
 
-function setStatus(id, st){ const e=members().employers.find(x=>x.id===id); if(e){ e.status=st; WL.save(); renderStats(); const cur=document.querySelector('#admin-nav .active').dataset.sec; renderSection(cur); showToast(`${e.company} → ${st.replace('_',' ')}`);} }
-function setPlan(id, plan){ const e=members().employers.find(x=>x.id===id); if(e){ e.plan=plan; e.price=({Starter:99,Pro:249,Enterprise:1200})[plan]; WL.save(); renderStats(); renderSection('employers'); showToast(`${e.company} moved to ${plan}.`);} }
+function renderEmployerDetail(id){
+  const e = findEmp(id); if(!e) return renderSection('employers');
+  ensureEmpInvoices(e);
+  const jobs = empJobs(e);
+  const due = e.invoices.filter(i=>i.status==='due').reduce((a,i)=>a+i.amount,0);
+  const main = document.getElementById('admin-main');
+  main.innerHTML = `
+    <a class="link-accent" onclick="renderSection('employers')">← Back to employers</a>
+    <div class="panel" style="margin-top:0.75rem;">
+      <div class="profile-header">
+        <div class="avatar-circle" style="background:${e.color};border-radius:10px;">${e.company.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+        <div class="profile-name"><h3>${escapeHtml(e.company)}</h3><p>${escapeHtml(e.type)} · ${e.metro} pool · member since ${fmtDate(e.joined)}</p>
+        <div style="margin-top:0.4rem;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">${statusBadge(e.status)}<span class="badge blue">${e.plan} · ${money(e.price)}/mo</span>${due>0?`<span class="badge yellow">${money(due)} due</span>`:''}</div></div>
+        <div style="margin-left:auto;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          ${e.status==='canceled'?`<button class="btn-sm" onclick="empSetStatus('${e.id}','active')">Reactivate</button>`:`<button class="btn-sm ghost" onclick="empSetStatus('${e.id}','${e.status==='active'?'canceled':'active'}')">${e.status==='active'?'Suspend':'Activate'}</button>`}
+          <button class="btn-sm ghost" onclick="empDelete('${e.id}')">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Business profile</h2></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Company name</label><input class="form-input" id="ep-company" value="${escapeHtml(e.company)}"></div>
+        <div class="form-group"><label class="form-label">Shop type</label><select class="form-select" id="ep-type">${['Auto Repair Shop','Auto Body / Collision Shop','Dealership Service Dept.','Fleet Maintenance','Multi-Location Group'].map(t=>`<option ${t===e.type?'selected':''}>${t}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">City pool</label><select class="form-select" id="ep-metro">${WL.cities().map(c=>`<option ${c.name===e.metro?'selected':''}>${c.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Team size</label><select class="form-select" id="ep-size">${['1–4 employees','5–15 employees','16–40 employees','40+ employees'].map(t=>`<option ${t===e.size?'selected':''}>${t}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ep-phone" value="${escapeHtml(e.phone||'')}"></div>
+        <div class="form-group"><label class="form-label">Website</label><input class="form-input" id="ep-web" value="${escapeHtml(e.website||'')}"></div>
+      </div>
+      <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Address</label><input class="form-input" id="ep-addr" value="${escapeHtml(e.address||'')}"></div>
+      <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Description</label><textarea class="form-input" id="ep-desc">${escapeHtml(e.description||'')}</textarea></div>
+      <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Perks (comma separated)</label><input class="form-input" id="ep-perks" value="${escapeHtml((e.perks||[]).join(', '))}"></div>
+      <button class="btn-sm" style="margin-top:1rem;" onclick="empSaveProfile('${e.id}')">Save profile</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Job listings (${jobs.length})</h2><button class="btn-sm" onclick="toggleAddJob('${e.id}')">${iconSvg('plus')} Add job</button></div>
+      <div id="add-job-form" style="display:none;margin-bottom:1rem;padding:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);">
+        <div class="form-row"><div class="form-group"><label class="form-label">Title</label><input class="form-input" id="nj-title" placeholder="Master Technician"></div>
+          <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="nj-type"><option>Auto Repair</option><option>Auto Body</option></select></div></div>
+        <div class="form-row" style="margin-top:0.6rem;grid-template-columns:1fr 1fr 1fr 1fr;">
+          <div class="form-group"><label class="form-label">Schedule</label><select class="form-select" id="nj-sched"><option>Full-Time</option><option>Part-Time</option></select></div>
+          <div class="form-group"><label class="form-label">Pay min $K</label><input class="form-input" id="nj-min" type="number" value="60"></div>
+          <div class="form-group"><label class="form-label">Pay max $K</label><input class="form-input" id="nj-max" type="number" value="85"></div>
+          <div class="form-group"><label class="form-label">Cert</label><input class="form-input" id="nj-cert" placeholder="ASE Required"></div></div>
+        <button class="btn-sm" style="margin-top:0.75rem;" onclick="empAddJob('${e.id}')">Publish job</button>
+      </div>
+      ${jobs.length ? `<table class="data-table"><thead><tr><th>Position</th><th>Type</th><th>Pay</th><th>Cert</th><th>Status</th><th></th></tr></thead><tbody>
+        ${jobs.map((j,idx)=>`<tr><td style="color:var(--text);font-weight:600;">${escapeHtml(j.title)}</td><td>${j.type} · ${j.schedule}</td><td>$${j.payMin}K–$${j.payMax}K</td><td>${escapeHtml(j.cert)}</td><td>${j.__added?'<span class="badge blue">Added</span>':'<span class="badge green">Live</span>'}</td>
+          <td>${j.__added?`<a class="link-accent" onclick="empRemoveJob('${e.id}','${j.id}')">Remove</a>`:'<span style="color:var(--muted);font-size:0.8rem;">seed</span>'}</td></tr>`).join('')}
+        </tbody></table>` : '<p style="color:var(--muted);">No job listings.</p>'}
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Plan &amp; payment</h2></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Plan they chose</label><select class="form-select" id="ep-plan" onchange="empSetPlan('${e.id}',this.value)">${['Starter','Pro','Enterprise'].map(p=>`<option ${p===e.plan?'selected':''}>${p}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">How much they pay</label><input class="form-input" value="${money(e.price)} / month" disabled></div>
+      </div>
+      <div class="profile-section-title" style="margin-top:1.5rem;">How they pay — card on file</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Card brand</label><select class="form-select" id="ep-brand">${['Visa','Mastercard','Amex','Discover'].map(b=>`<option ${e.paymentMethod&&e.paymentMethod.brand===b?'selected':''}>${b}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Card number (last 4)</label><input class="form-input" id="ep-last4" maxlength="4" value="${e.paymentMethod?escapeHtml(e.paymentMethod.last4):''}" placeholder="4242"></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">Expiry</label><input class="form-input" id="ep-exp" value="${e.paymentMethod?escapeHtml(e.paymentMethod.exp):''}" placeholder="08/27"></div>
+        <div class="form-group"><label class="form-label">Name on card</label><input class="form-input" id="ep-cardname" value="${e.paymentMethod?escapeHtml(e.paymentMethod.name):''}" placeholder="Cardholder"></div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;"><button class="btn-sm" onclick="empSaveCard('${e.id}')">Save card</button>${e.paymentMethod?`<button class="btn-sm ghost" onclick="empRemoveCard('${e.id}')">Remove card</button>`:''}</div>
+      <p style="font-size:0.76rem;color:var(--muted);margin-top:0.75rem;">Demo data — no real card numbers are stored. Only brand, last four, and expiry are shown.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Invoices (${e.invoices.length})</h2><div style="font-size:0.82rem;color:var(--muted);">Total billed: ${money(e.invoices.reduce((a,i)=>a+i.amount,0))} · Outstanding: <strong style="color:${due>0?'var(--amber)':'var(--green)'};">${money(due)}</strong></div></div>
+      <table class="data-table"><thead><tr><th>Invoice</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+        ${e.invoices.map(i=>`<tr><td style="color:var(--text);font-weight:600;">${i.id}</td><td>${fmtDate(i.date)}</td><td>${money(i.amount)}</td><td><span class="badge ${i.status==='paid'?'green':'yellow'}">${i.status==='paid'?'Paid':'Due'}</span></td><td>${i.status==='due'?`<a class="link-accent" onclick="empPayInvoice('${e.id}','${i.id}')">Mark paid</a>`:`<span style="color:var(--muted);font-size:0.8rem;">paid ${fmtDate(i.paidDate)}</span>`}</td></tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  applyIcons(main);
+}
+
+/* employer mutations */
+function empSaveProfile(id){ const e=findEmp(id);
+  e.company=document.getElementById('ep-company').value; e.type=document.getElementById('ep-type').value;
+  e.metro=document.getElementById('ep-metro').value; e.size=document.getElementById('ep-size').value;
+  e.phone=document.getElementById('ep-phone').value; e.website=document.getElementById('ep-web').value;
+  e.address=document.getElementById('ep-addr').value; e.description=document.getElementById('ep-desc').value;
+  e.perks=document.getElementById('ep-perks').value.split(',').map(s=>s.trim()).filter(Boolean);
+  WL.save(); renderEmployerDetail(id); showToast('Employer profile saved.'); }
+function empSetPlan(id,plan){ const e=findEmp(id); e.plan=plan; e.price=PLAN_PRICE[plan]; regenEmpInvoices(e); WL.save(); renderStats(); renderEmployerDetail(id); showToast(e.company+' → '+plan+' plan ('+money(e.price)+'/mo).'); }
+function empSetStatus(id,st,silent){ const e=findEmp(id); e.status=st; if(st==='active'){ (e.invoices||[]).forEach(i=>{ if(i.status==='due'){ i.status='paid'; i.paidDate=Billing.iso(Billing.now()); } }); } WL.save(); renderStats(); if(silent){ renderSection(CURRENT_SEC); } else { renderEmployerDetail(id); } showToast(e.company+' → '+st.replace('_',' ')+'.'); }
+function empDelete(id){ const e=findEmp(id); if(!confirm('Delete '+e.company+'? This removes the account and its records.'))return; const arr=members().employers; arr.splice(arr.findIndex(x=>x.id===id),1); WL.save(); renderStats(); renderSection('employers'); showToast('Employer deleted.'); }
+function empSaveCard(id){ const e=findEmp(id); const last4=document.getElementById('ep-last4').value.replace(/\D/g,'').slice(-4); if(!last4){ showToast('Enter the last 4 digits.', true); return; } e.paymentMethod={ brand:document.getElementById('ep-brand').value, last4, exp:document.getElementById('ep-exp').value||'—', name:document.getElementById('ep-cardname').value||e.company }; regenEmpInvoices(e); WL.save(); renderEmployerDetail(id); showToast('Card saved — outstanding invoices settled.'); }
+function empRemoveCard(id){ const e=findEmp(id); e.paymentMethod=null; WL.save(); renderEmployerDetail(id); showToast('Card removed.'); }
+function empPayInvoice(id,invId){ const e=findEmp(id); const i=e.invoices.find(x=>x.id===invId); if(i){ i.status='paid'; i.paidDate=Billing.iso(Billing.now()); WL.save(); renderEmployerDetail(id); showToast('Invoice '+invId+' marked paid.'); } }
+function toggleAddJob(id){ const f=document.getElementById('add-job-form'); f.style.display = f.style.display==='none'?'block':'none'; }
+function empAddJob(id){ const e=findEmp(id); const title=document.getElementById('nj-title').value.trim(); if(!title){ showToast('Enter a job title.', true); return; }
+  e.addedJobs=e.addedJobs||[]; e.addedJobs.push({ id:'aj'+Date.now(), __added:true, title, type:document.getElementById('nj-type').value, schedule:document.getElementById('nj-sched').value, payMin:+document.getElementById('nj-min').value||0, payMax:+document.getElementById('nj-max').value||0, cert:document.getElementById('nj-cert').value||'Experience Required', exp:0, shop:e.company, city:e.metro+', OH', metro:e.metro, distance:5, color:e.color, logo:e.company.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(), desc:'Posted by '+e.company+'.' });
+  WL.save(); renderEmployerDetail(id); showToast('Job added to '+e.company+'.'); }
+function empRemoveJob(id,jobId){ const e=findEmp(id); e.addedJobs=(e.addedJobs||[]).filter(j=>j.id!==jobId); WL.save(); renderEmployerDetail(id); showToast('Job removed.'); }
+
+/* mark seed jobs with flag for display */
+(function(){ /* seed jobs are not __added; flagged in template via j.__added */ })();
+
+/* ============================================================
+   TECHNICIAN DETAIL
+   ============================================================ */
+function openTech(id){ setActiveNav('techs'); renderTechDetail(id); window.scrollTo(0,0); }
+
+function renderTechDetail(id){
+  const t = findTech(id); if(!t) return renderSection('techs');
+  ensureTechInvoices(t);
+  const due = t.invoices.filter(i=>i.status==='due').reduce((a,i)=>a+i.amount,0);
+  const main = document.getElementById('admin-main');
+  main.innerHTML = `
+    <a class="link-accent" onclick="renderSection('techs')">← Back to technicians</a>
+    <div class="panel" style="margin-top:0.75rem;">
+      <div class="profile-header">
+        <div class="avatar-circle" style="background:${t.color};">${t.initials||t.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+        <div class="profile-name"><h3>${escapeHtml(t.name)}</h3><p>${escapeHtml(t.role)} · ${t.exp} yrs · ${t.metro} pool · member since ${fmtDate(t.joined)}</p>
+        <div style="margin-top:0.4rem;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;"><span class="stars">${stars(t.rating)}</span><span style="font-size:0.8rem;color:var(--muted);">${t.rating.toFixed(1)}</span>${statusBadge(t.status)}<span class="badge blue">Solo · ${money(t.price)}/mo</span></div></div>
+        <div style="margin-left:auto;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <select class="form-select" style="width:auto;" onchange="techSetStatus('${t.id}',this.value)">${['active','passive','notlooking'].map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}</select>
+          <button class="btn-sm ghost" onclick="techDelete('${t.id}')">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Profile</h2></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="tp-name" value="${escapeHtml(t.name)}"></div>
+        <div class="form-group"><label class="form-label">Role / title</label><input class="form-input" id="tp-role" value="${escapeHtml(t.role)}"></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">Years experience</label><input class="form-input" id="tp-exp" type="number" value="${t.exp}"></div>
+        <div class="form-group"><label class="form-label">City pool</label><select class="form-select" id="tp-metro">${WL.cities().map(c=>`<option ${c.name===t.metro?'selected':''}>${c.name}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="tp-phone" value="${escapeHtml(t.phone||'')}"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="tp-email" value="${escapeHtml(t.email||'')}"></div>
+      </div>
+      <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Skills (comma separated)</label><input class="form-input" id="tp-skills" value="${escapeHtml((t.skills||[]).join(', '))}"></div>
+      <div class="profile-section-title" style="margin-top:1.25rem;">Certifications</div>
+      <div class="skills-grid">${(t.certs||[]).map(c=>`<span class="skill-tag highlight">${escapeHtml(c.name)}${c.exp?' · exp '+escapeHtml(c.exp):''}</span>`).join('')||'<span style="color:var(--muted);">None recorded.</span>'}</div>
+      <button class="btn-sm" style="margin-top:1.25rem;" onclick="techSaveProfile('${t.id}')">Save profile</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Plan &amp; payment</h2></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Plan</label><input class="form-input" value="Solo (Technician)" disabled></div>
+        <div class="form-group"><label class="form-label">How much they pay</label><input class="form-input" value="${money(t.price)} / month" disabled></div>
+      </div>
+      <div class="profile-section-title" style="margin-top:1.5rem;">How they pay — card on file</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Card brand</label><select class="form-select" id="tp-brand">${['Visa','Mastercard','Amex','Discover'].map(b=>`<option ${t.paymentMethod&&t.paymentMethod.brand===b?'selected':''}>${b}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Card number (last 4)</label><input class="form-input" id="tp-last4" maxlength="4" value="${t.paymentMethod?escapeHtml(t.paymentMethod.last4):''}" placeholder="4242"></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">Expiry</label><input class="form-input" id="tp-exp2" value="${t.paymentMethod?escapeHtml(t.paymentMethod.exp):''}" placeholder="08/28"></div>
+        <div class="form-group"><label class="form-label">Name on card</label><input class="form-input" id="tp-cardname" value="${t.paymentMethod?escapeHtml(t.paymentMethod.name):''}"></div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;"><button class="btn-sm" onclick="techSaveCard('${t.id}')">Save card</button>${t.paymentMethod?`<button class="btn-sm ghost" onclick="techRemoveCard('${t.id}')">Remove card</button>`:''}</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Invoices (${t.invoices.length})</h2><div style="font-size:0.82rem;color:var(--muted);">Total billed: ${money(t.invoices.reduce((a,i)=>a+i.amount,0))} · Outstanding: <strong style="color:${due>0?'var(--amber)':'var(--green)'};">${money(due)}</strong></div></div>
+      <table class="data-table"><thead><tr><th>Invoice</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+        ${t.invoices.map(i=>`<tr><td style="color:var(--text);font-weight:600;">${i.id}</td><td>${fmtDate(i.date)}</td><td>${money(i.amount)}</td><td><span class="badge ${i.status==='paid'?'green':'yellow'}">${i.status==='paid'?'Paid':'Due'}</span></td><td>${i.status==='due'?`<a class="link-accent" onclick="techPayInvoice('${t.id}','${i.id}')">Mark paid</a>`:`<span style="color:var(--muted);font-size:0.8rem;">paid ${fmtDate(i.paidDate)}</span>`}</td></tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  applyIcons(main);
+}
+
+/* technician mutations */
+function techSaveProfile(id){ const t=findTech(id);
+  t.name=document.getElementById('tp-name').value; t.role=document.getElementById('tp-role').value; t.title=t.role;
+  t.exp=+document.getElementById('tp-exp').value||0; t.metro=document.getElementById('tp-metro').value;
+  t.phone=document.getElementById('tp-phone').value; t.email=document.getElementById('tp-email').value;
+  t.skills=document.getElementById('tp-skills').value.split(',').map(s=>s.trim()).filter(Boolean);
+  WL.save(); renderTechDetail(id); showToast('Technician profile saved.'); }
+function techSetStatus(id,st){ const t=findTech(id); t.status=st; WL.save(); showToast(t.name+' → '+statusLabel(st)+'.'); }
+function techDelete(id){ const t=findTech(id); if(!confirm('Delete '+t.name+'?'))return; const arr=members().techs; arr.splice(arr.findIndex(x=>x.id===id),1); WL.save(); renderStats(); renderSection('techs'); showToast('Technician deleted.'); }
+function techSaveCard(id){ const t=findTech(id); const last4=document.getElementById('tp-last4').value.replace(/\D/g,'').slice(-4); if(!last4){ showToast('Enter the last 4 digits.', true); return; } t.paymentMethod={ brand:document.getElementById('tp-brand').value, last4, exp:document.getElementById('tp-exp2').value||'—', name:document.getElementById('tp-cardname').value||t.name }; regenTechInvoices(t); WL.save(); renderTechDetail(id); showToast('Card saved — invoices settled.'); }
+function techRemoveCard(id){ const t=findTech(id); t.paymentMethod=null; WL.save(); renderTechDetail(id); showToast('Card removed.'); }
+function techPayInvoice(id,invId){ const t=findTech(id); const i=t.invoices.find(x=>x.id===invId); if(i){ i.status='paid'; i.paidDate=Billing.iso(Billing.now()); WL.save(); renderTechDetail(id); showToast('Invoice '+invId+' marked paid.'); } }
+
+/* ============================================================
+   ADD NEW MEMBERS
+   ============================================================ */
+function addEmployerForm(){
+  const main=document.getElementById('admin-main');
+  main.innerHTML = `<a class="link-accent" onclick="renderSection('employers')">← Back to employers</a>
+    <div class="panel" style="margin-top:0.75rem;"><div class="panel-head"><h2>Add employer</h2></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input class="form-input" id="ne-company" placeholder="New Shop Auto"></div>
+      <div class="form-group"><label class="form-label">Shop type</label><select class="form-select" id="ne-type">${['Auto Repair Shop','Auto Body / Collision Shop','Dealership Service Dept.','Fleet Maintenance','Multi-Location Group'].map(t=>`<option>${t}</option>`).join('')}</select></div></div>
+    <div class="form-row" style="margin-top:0.75rem;"><div class="form-group"><label class="form-label">City pool</label><select class="form-select" id="ne-metro">${WL.cities().map(c=>`<option>${c.name}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Plan</label><select class="form-select" id="ne-plan"><option>Starter</option><option selected>Pro</option><option>Enterprise</option></select></div></div>
+    <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Email</label><input class="form-input" id="ne-email" placeholder="hiring@newshop.com"></div>
+    <button class="btn-sm" style="margin-top:1rem;" onclick="createEmployer()">Create employer</button></div>`;
+}
+function createEmployer(){
+  const company=document.getElementById('ne-company').value.trim(); if(!company){ showToast('Enter a company name.', true); return; }
+  const plan=document.getElementById('ne-plan').value;
+  const e={ id:'e'+Date.now(), company, type:document.getElementById('ne-type').value, metro:document.getElementById('ne-metro').value,
+    plan, price:PLAN_PRICE[plan], status:'active', joined:Billing.iso(new Date()),
+    address:'', phone:'', website:'', size:'1–4 employees', color:'#16233f', description:'', perks:[], paymentMethod:null, addedJobs:[], invoices:null,
+    email:document.getElementById('ne-email').value };
+  members().employers.unshift(e); WL.save(); renderStats(); openEmp(e.id); showToast('Employer created — complete their profile.');
+}
+function addTechForm(){
+  const main=document.getElementById('admin-main');
+  main.innerHTML = `<a class="link-accent" onclick="renderSection('techs')">← Back to technicians</a>
+    <div class="panel" style="margin-top:0.75rem;"><div class="panel-head"><h2>Add technician</h2></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="nt-name" placeholder="Jane Smith"></div>
+      <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="nt-role" placeholder="Master Tech"></div></div>
+    <div class="form-row" style="margin-top:0.75rem;"><div class="form-group"><label class="form-label">Years exp</label><input class="form-input" id="nt-exp" type="number" value="5"></div>
+      <div class="form-group"><label class="form-label">City pool</label><select class="form-select" id="nt-metro">${WL.cities().map(c=>`<option>${c.name}</option>`).join('')}</select></div></div>
+    <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Email</label><input class="form-input" id="nt-email" placeholder="jane@example.com"></div>
+    <button class="btn-sm" style="margin-top:1rem;" onclick="createTech()">Create technician</button></div>`;
+}
+function createTech(){
+  const name=document.getElementById('nt-name').value.trim(); if(!name){ showToast('Enter a name.', true); return; }
+  const t={ id:'t'+Date.now(), name, role:document.getElementById('nt-role').value||'Technician', title:document.getElementById('nt-role').value||'Technician',
+    metro:document.getElementById('nt-metro').value, city:'', status:'active', exp:+document.getElementById('nt-exp').value||0,
+    rating:5.0, reviews:0, type:'Auto Repair', color:'#16233f', initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+    skills:[], certs:[], phone:'', email:document.getElementById('nt-email').value, plan:'Solo', price:9.95, paymentMethod:null,
+    joined:Billing.iso(new Date()), invoices:null };
+  members().techs.unshift(t); WL.save(); renderStats(); openTech(t.id); showToast('Technician created.');
+}
 
 if (_u && _u.type === 'admin') { renderStats(); renderSection('overview'); }
 </script>

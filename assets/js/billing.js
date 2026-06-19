@@ -153,6 +153,33 @@ const Billing = {
     if (inv) { inv.status = 'paid'; inv.paidDate = this.iso(this.now()); WL.save(); }
   },
 
+  // generate a monthly invoice series for any account (used by admin oversight)
+  genInvoices(opts) {
+    const now = this.now();
+    const out = [];
+    let cursor = new Date(opts.startISO);
+    let seq = 0, guard = 0;
+    const hasCard = !!opts.hasCard;
+    while (cursor <= now && guard < 240) {
+      guard++; seq++;
+      const due = opts.status === 'past_due' && cursor > this.addMonths(now, -1); // most recent unpaid if past_due
+      const paid = hasCard && !due;
+      out.push({
+        id: 'WL-' + cursor.getFullYear() + '-' + String(seq).padStart(4, '0'),
+        date: this.iso(cursor),
+        periodStart: this.iso(cursor),
+        periodEnd: this.iso(this.addMonths(cursor, 1)),
+        description: (opts.planName || 'Subscription') + ' plan — monthly subscription',
+        amount: opts.price,
+        status: paid ? 'paid' : 'due',
+        paidDate: paid ? this.iso(cursor) : null,
+      });
+      cursor = this.addMonths(cursor, 1);
+    }
+    out.sort((a, b) => b.date.localeCompare(a.date));
+    return out;
+  },
+
   // demo control: advance the billing clock one month and accrue
   advanceMonth() {
     const s = WL.get();
