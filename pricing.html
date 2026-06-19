@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — WrenchLink</title>
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Pricing</div>
+    <h1>Plans for <em>every shop</em></h1>
+    <p>Technicians get full platform access for $9.95/mo. Employers choose the plan that fits their hiring volume. No setup fees, cancel anytime.</p>
+  </div>
+
+  <div style="display:flex;gap:1rem;margin-bottom:2.5rem;flex-wrap:wrap;">
+    <button class="preview-tab active"><span data-ic="building"></span> Employer Plans</button>
+    <button class="preview-tab" style="color:var(--muted);cursor:default;"><span data-ic="wrench"></span> Technicians — $9.95/mo</button>
+  </div>
+
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-plan">Starter</div>
+      <div class="pricing-price"><sup>$</sup>99<sub>/mo</sub></div>
+      <div class="pricing-desc">Perfect for small shops hiring occasionally</div>
+      <ul class="pricing-features">
+        <li>2 active job postings</li><li>100 candidate profile views/mo</li>
+        <li>City Pool access (1 city)</li><li>Applicant messaging</li><li>Basic analytics dashboard</li>
+      </ul>
+      <button class="btn-plan btn-plan-outline" onclick="choosePlan('Starter')">Get Started</button>
+    </div>
+    <div class="pricing-card featured">
+      <div class="featured-badge">Most Popular</div>
+      <div class="pricing-plan">Pro</div>
+      <div class="pricing-price"><sup>$</sup>249<sub>/mo</sub></div>
+      <div class="pricing-desc">For shops actively growing their team</div>
+      <ul class="pricing-features">
+        <li>10 active job postings</li><li>Unlimited candidate profile views</li>
+        <li>City Pool access (3 cities)</li><li>Direct candidate outreach</li>
+        <li>Advanced candidate filtering</li><li>Priority listing placement</li><li>Application tracking system</li>
+      </ul>
+      <button class="btn-plan btn-plan-fill" onclick="choosePlan('Pro')">Get Started</button>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-plan">Enterprise</div>
+      <div class="pricing-price" style="font-size:2.5rem;">Custom</div>
+      <div class="pricing-desc">For multi-location groups and dealerships</div>
+      <ul class="pricing-features">
+        <li>Unlimited job postings</li><li>Unlimited candidate access</li>
+        <li>National City Pool access</li><li>Dedicated account manager</li>
+        <li>Custom ATS integration</li><li>Branded employer profile</li><li>Bulk outreach tools</li>
+      </ul>
+      <button class="btn-plan btn-plan-outline" onclick="showToast('Sales team will reach out!')">Contact Sales</button>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:3rem;max-width:680px;">
+    <div class="panel-head"><h2>Technicians — $9.95/mo</h2></div>
+    <div class="pricing-price" style="margin-bottom:1rem;"><sup>$</sup>9.95<sub>/mo</sub></div>
+    <ul class="pricing-features">
+      <li>Unlimited job applications with one-click apply</li>
+      <li>Full professional Vault — certs, work history, salary target</li>
+      <li>Join any City Pool and control your visibility</li>
+      <li>Direct messaging with hiring shops</li>
+      <li>Verified credentials and employer ratings</li>
+    </ul>
+    <button class="btn-sm" onclick="openModal('register')">Start your vault — $9.95/mo →</button>
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav('pricing');
+renderFooter();
+function choosePlan(plan){
+  const u = WL.get().user;
+  if (u && u.type === 'employer') { u.plan = plan; if(u.bizData) {} WL.set({user:u}); showToast(plan+' plan selected for '+u.company+'.'); setTimeout(()=>location.href='employer.html',800); }
+  else { ensureModal(); openModal('employer'); showToast('Create an employer account to pick the '+plan+' plan.'); }
+}
+</script>
+</body>
+</html>

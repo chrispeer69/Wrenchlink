@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Console — WrenchLink</title>
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Master Admin Console</div>
+    <h1>Platform <em>control</em></h1>
+    <p>Manage every employer and technician on WrenchLink, oversee paid subscriptions, and monitor platform health from a single back end.</p>
+  </div>
+
+  <div class="stat-row" id="admin-stats"></div>
+
+  <div class="app-layout">
+    <aside class="app-rail">
+      <div class="rail-title">Console</div>
+      <div class="rail-group" id="admin-nav">
+        <a class="sidebar-item active" data-sec="overview"><span class="icon" data-ic="chart"></span> Overview</a>
+        <a class="sidebar-item" data-sec="employers"><span class="icon" data-ic="building"></span> Employers</a>
+        <a class="sidebar-item" data-sec="techs"><span class="icon" data-ic="wrench"></span> Technicians</a>
+        <a class="sidebar-item" data-sec="billing"><span class="icon" data-ic="card"></span> Subscriptions</a>
+        <a class="sidebar-item" data-sec="pools"><span class="icon" data-ic="map"></span> City Pools</a>
+      </div>
+      <div class="rail-title">Signed in</div>
+      <div style="padding:0 0.25rem;"><span class="badge blue">Platform Admin</span></div>
+    </aside>
+    <main id="admin-main"></main>
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav();
+renderFooter();
+
+// ---- admin guard (allow admin; offer quick admin sign-in otherwise) ----
+const _u = WL.get().user;
+if (!_u || _u.type !== 'admin') {
+  document.querySelector('.page').innerHTML = `
+    <div class="page-head"><div class="section-tag">Restricted</div><h1>Admin <em>sign-in</em></h1>
+    <p>This is the platform master console. Sign in with an administrator account to continue.</p></div>
+    <div class="panel" style="max-width:440px;">
+      <div class="form-group"><label class="form-label">Admin Email</label><input class="form-input" id="adm-email" value="admin@wrenchlink.io"></div>
+      <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Password</label><input class="form-input" id="adm-pass" type="password" value="demo"></div>
+      <button class="btn-sm" style="margin-top:1rem;" onclick="adminLogin()">Enter Console →</button>
+      <p style="color:var(--muted);font-size:0.8rem;margin-top:1rem;">Demo: any password works. Email must be <strong style="color:var(--chrome);">admin@wrenchlink.io</strong>.</p>
+    </div>`;
+}
+function adminLogin(){
+  const e=document.getElementById('adm-email').value.trim().toLowerCase();
+  if(e!=='admin@wrenchlink.io'){ showToast('Use admin@wrenchlink.io for the demo.', true); return; }
+  WL.set({ user:{ type:'admin', name:'Platform Admin', email:e } });
+  location.reload();
+}
+
+// ---- seed member directory (persisted so admin actions stick) ----
+function members() {
+  const s = WL.get();
+  if (!s.members) {
+    const empSeed = [
+      { id:'e1', company:'Apex Body & Auto', type:'Auto Body / Collision Shop', metro:'Columbus', plan:'Pro', price:249, status:'active', joined:'2025-08-14', postings:3 },
+      { id:'e2', company:'Summit Collision Center', type:'Auto Body / Collision Shop', metro:'Columbus', plan:'Starter', price:99, status:'active', joined:'2025-11-02', postings:1 },
+      { id:'e3', company:'Precision Motors', type:'Dealership Service Dept.', metro:'Columbus', plan:'Pro', price:249, status:'active', joined:'2025-09-21', postings:2 },
+      { id:'e4', company:'Cleveland Auto Group', type:'Multi-Location Group', metro:'Cleveland', plan:'Enterprise', price:1200, status:'active', joined:'2025-06-30', postings:14 },
+      { id:'e5', company:'GearHead Transmissions', type:'Auto Repair Shop', metro:'Atlanta', plan:'Pro', price:249, status:'past_due', joined:'2026-01-11', postings:2 },
+      { id:'e6', company:'Dallas Drive Auto', type:'Auto Repair Shop', metro:'Dallas', plan:'Starter', price:99, status:'active', joined:'2026-02-19', postings:1 },
+      { id:'e7', company:'Heartland Fleet Services', type:'Fleet Maintenance', metro:'Columbus', plan:'Pro', price:249, status:'canceled', joined:'2025-10-08', postings:0 },
+    ];
+    const techSeed = WL_SEED_CANDIDATES.map((c,i) => ({
+      id:'t'+(i+1), name:c.name, role:c.role, metro:c.metro, status:c.status,
+      plan:'Solo', price:9.95, joined:['2025-07-12','2025-08-30','2025-09-15','2025-10-22','2025-11-19','2025-12-05','2026-01-28','2026-02-14'][i], rating:c.rating,
+    }));
+    s.members = { employers: empSeed, techs: techSeed };
+    WL.save();
+  }
+  // fold in the locally-registered user, if any, so it shows in the directory
+  return s.members;
+}
+
+function money(n){ return '$'+n.toLocaleString(); }
+function statusBadge(st){
+  const map = { active:['green','Active'], past_due:['yellow','Past Due'], canceled:['muted','Canceled'], passive:['yellow','Passive'], notlooking:['muted','Off'] };
+  const [c,l] = map[st] || ['muted', st]; return `<span class="badge ${c}">${l}</span>`;
+}
+
+function renderStats(){
+  const m = members();
+  const empMrr = m.employers.filter(e=>e.status==='active'||e.status==='past_due').reduce((a,e)=>a+e.price,0);
+  const techMrr = m.techs.length * 9.95;
+  const mrr = empMrr + techMrr;
+  const activeSubs = m.employers.filter(e=>e.status==='active').length + m.techs.length;
+  document.getElementById('admin-stats').innerHTML = `
+    <div class="dash-stat"><div class="num">${m.employers.length + m.techs.length}</div><div class="lbl">Total Members</div></div>
+    <div class="dash-stat"><div class="num">${money(Math.round(mrr))}</div><div class="lbl">Monthly Recurring Rev.</div></div>
+    <div class="dash-stat"><div class="num">${activeSubs}</div><div class="lbl">Active Subscriptions</div></div>
+    <div class="dash-stat"><div class="num">${m.techs.length}</div><div class="lbl">Technician Members</div></div>`;
+}
+
+document.querySelectorAll('#admin-nav .sidebar-item').forEach(a => a.addEventListener('click', () => {
+  document.querySelectorAll('#admin-nav .sidebar-item').forEach(x=>x.classList.remove('active'));
+  a.classList.add('active'); renderSection(a.dataset.sec);
+}));
+
+function renderSection(sec){
+  const m = members(), main = document.getElementById('admin-main');
+
+  if (sec === 'overview') {
+    const byPlan = {};
+    m.employers.forEach(e => byPlan[e.plan] = (byPlan[e.plan]||0)+1);
+    const empMrr = m.employers.filter(e=>e.status!=='canceled').reduce((a,e)=>a+e.price,0);
+    const techMrr = m.techs.length * 9.95;
+    const mrr = empMrr + techMrr;
+    main.innerHTML = `
+      <div class="panel"><div class="panel-head"><h2>Revenue by Plan</h2></div>
+        <table class="data-table"><thead><tr><th>Plan</th><th>Subscribers</th><th>Unit Price</th><th>Plan MRR</th></tr></thead><tbody>
+          ${['Starter','Pro','Enterprise'].map(p=>{ const subs=m.employers.filter(e=>e.plan===p&&e.status!=='canceled'); const price=({Starter:99,Pro:249,Enterprise:1200})[p]; return `<tr><td style="color:var(--white);font-weight:600;">${p} (Employer)</td><td>${subs.length}</td><td>${money(price)}/mo</td><td style="color:var(--accent);font-weight:700;">${money(subs.length*price)}</td></tr>`; }).join('')}
+          <tr><td style="color:var(--white);font-weight:600;">Solo (Technician)</td><td>${m.techs.length}</td><td>$9.95/mo</td><td style="color:var(--accent);font-weight:700;">${money(Math.round(techMrr))}</td></tr>
+          <tr><td colspan="3" style="text-align:right;color:var(--muted);">Total MRR</td><td style="color:var(--accent);font-weight:800;">${money(Math.round(mrr))}</td></tr>
+        </tbody></table></div>
+      <div class="panel"><div class="panel-head"><h2>Attention Needed</h2></div>
+        ${m.employers.filter(e=>e.status==='past_due').map(e=>`<div class="candidate-card"><div class="cand-avatar" style="background:rgba(255,193,7,0.2);color:var(--accent2);">!</div><div class="cand-info"><div class="cand-name">${escapeHtml(e.company)}</div><div class="cand-role">${e.plan} plan · payment past due · ${money(e.price)}/mo</div></div><div class="cand-actions"><button class="cand-btn primary" onclick="setStatus('${e.id}','active')">Mark Paid</button></div></div>`).join('') || '<p style="color:var(--muted);">All subscriptions in good standing.</p>'}</div>`;
+    return;
+  }
+
+  if (sec === 'employers') {
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Employers (${m.employers.length})</h2><input class="search-input" id="emp-q" placeholder="Search employers…" style="max-width:220px;" oninput="renderSection('employers')"></div>
+      <table class="data-table"><thead><tr><th>Company</th><th>Type</th><th>Pool</th><th>Plan</th><th>MRR</th><th>Status</th><th>Actions</th></tr></thead><tbody id="emp-rows"></tbody></table></div>`;
+    const q=(document.getElementById('emp-q')?.value||'').toLowerCase();
+    document.getElementById('emp-rows').innerHTML = m.employers.filter(e=>(`${e.company} ${e.type} ${e.metro}`).toLowerCase().includes(q)).map(e=>`
+      <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(e.company)}</td><td>${escapeHtml(e.type)}</td><td>${e.metro}</td>
+      <td><select class="sort-select" onchange="setPlan('${e.id}',this.value)">${['Starter','Pro','Enterprise'].map(p=>`<option ${p===e.plan?'selected':''}>${p}</option>`).join('')}</select></td>
+      <td>${money(e.price)}</td><td>${statusBadge(e.status)}</td>
+      <td>${e.status==='active'?`<a class="link-accent" onclick="setStatus('${e.id}','canceled')">Suspend</a>`:`<a class="link-accent" onclick="setStatus('${e.id}','active')">Activate</a>`}</td></tr>`).join('');
+    return;
+  }
+
+  if (sec === 'techs') {
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Technicians (${m.techs.length})</h2><input class="search-input" id="tech-q" placeholder="Search technicians…" style="max-width:220px;" oninput="renderSection('techs')"></div>
+      <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Pool</th><th>Availability</th><th>Plan</th><th>Joined</th></tr></thead><tbody id="tech-rows"></tbody></table></div>`;
+    const q=(document.getElementById('tech-q')?.value||'').toLowerCase();
+    document.getElementById('tech-rows').innerHTML = m.techs.filter(t=>(`${t.name} ${t.role} ${t.metro}`).toLowerCase().includes(q)).map(t=>`
+      <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(t.name)}</td><td>${escapeHtml(t.role)}</td><td>${t.metro}</td>
+      <td>${statusBadge(t.status)}</td><td><span class="badge muted">${t.plan}</span></td><td>${t.joined}</td></tr>`).join('');
+    return;
+  }
+
+  if (sec === 'billing') {
+    const active = m.employers.filter(e=>e.status!=='canceled');
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Subscriptions &amp; Billing</h2></div>
+      <table class="data-table"><thead><tr><th>Account</th><th>Plan</th><th>Amount</th><th>Billing Status</th><th>Next Invoice</th><th></th></tr></thead><tbody>
+      ${active.map(e=>`<tr><td style="color:var(--white);font-weight:600;">${escapeHtml(e.company)}</td><td>${e.plan}</td><td>${money(e.price)}/mo</td><td>${statusBadge(e.status)}</td><td>${nextInvoice(e.joined)}</td>
+      <td>${e.status==='past_due'?`<a class="link-accent" onclick="setStatus('${e.id}','active')">Retry charge</a>`:`<a class="link-accent" onclick="setStatus('${e.id}','canceled')">Cancel</a>`}</td></tr>`).join('')}
+      </tbody></table>
+      <p style="color:var(--muted);font-size:0.82rem;margin-top:1rem;">Technician "Solo" accounts are billed $9.95/mo. Employer plans renew monthly. The table above lists employer subscriptions; technician billing is aggregated in Revenue by Plan.</p></div>`;
+    return;
+  }
+
+  if (sec === 'pools') {
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>City Pool Activity</h2></div>
+      <table class="data-table"><thead><tr><th>City Pool</th><th>Region</th><th>Technicians</th><th>Open Jobs</th><th>Employers</th></tr></thead><tbody>
+      ${WL.cities().map(c=>{ const emps=m.employers.filter(e=>e.metro===c.name&&e.status!=='canceled').length; return `<tr><td style="color:var(--white);font-weight:600;">${c.name}, ${c.state}</td><td>${c.region}</td><td>${c.techs}</td><td>${c.jobs}</td><td>${emps}</td></tr>`; }).join('')}
+      </tbody></table></div>`;
+    return;
+  }
+}
+
+function nextInvoice(joined){ const d=new Date(joined); const day=d.getDate(); const now=new Date('2026-06-19'); const nx=new Date(now.getFullYear(), now.getMonth()+(now.getDate()>=day?1:0), day); return nx.toISOString().slice(0,10); }
+
+function setStatus(id, st){ const e=members().employers.find(x=>x.id===id); if(e){ e.status=st; WL.save(); renderStats(); const cur=document.querySelector('#admin-nav .active').dataset.sec; renderSection(cur); showToast(`${e.company} → ${st.replace('_',' ')}`);} }
+function setPlan(id, plan){ const e=members().employers.find(x=>x.id===id); if(e){ e.plan=plan; e.price=({Starter:99,Pro:249,Enterprise:1200})[plan]; WL.save(); renderStats(); renderSection('employers'); showToast(`${e.company} moved to ${plan}.`);} }
+
+if (_u && _u.type === 'admin') { renderStats(); renderSection('overview'); }
+</script>
+</body>
+</html>

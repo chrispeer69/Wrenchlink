@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employer Dashboard — WrenchLink</title>
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Employer Portal</div>
+    <h1>Shop <em>dashboard</em></h1>
+    <p id="emp-sub">Manage your business profile, post and track openings, and reach verified technicians in your City Pool.</p>
+  </div>
+
+  <div class="stat-row" id="emp-stats"></div>
+
+  <div class="app-layout">
+    <aside class="app-rail">
+      <div class="rail-title">Manage</div>
+      <div class="rail-group" id="emp-nav">
+        <a class="sidebar-item active" data-sec="business"><span class="icon" data-ic="building"></span> Business Profile</a>
+        <a class="sidebar-item" data-sec="jobs"><span class="icon" data-ic="list"></span> My Job Postings</a>
+        <a class="sidebar-item" data-sec="post"><span class="icon" data-ic="plus"></span> Post a Job</a>
+        <a class="sidebar-item" data-sec="candidates"><span class="icon" data-ic="search"></span> Search Talent</a>
+        <a class="sidebar-item" data-sec="apps"><span class="icon" data-ic="chat"></span> Applicants</a>
+      </div>
+      <div class="rail-title">Plan</div>
+      <div style="padding:0 0.25rem;">
+        <span class="badge yellow" id="emp-plan-badge">Pro</span>
+        <a href="pricing.html" class="link-accent" style="font-size:0.8rem;display:block;margin-top:0.5rem;">Manage subscription →</a>
+      </div>
+    </aside>
+
+    <main id="emp-main"></main>
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav();
+renderFooter();
+requireRole('employer');
+
+function biz() {
+  const u = WL.get().user;
+  if (!u.bizData) {
+    u.bizData = {
+      company: u.company || 'Your Shop',
+      type: u.shoptype || 'Auto Repair Shop',
+      metro: u.metro || 'Columbus',
+      address: '',
+      phone: '',
+      website: '',
+      founded: '',
+      size: '5–15 employees',
+      description: 'Tell technicians about your shop — your specialties, equipment, culture, and what makes it a great place to turn wrenches.',
+      perks: ['Tool allowance','Paid ASE testing','Health insurance','Paid time off'],
+      logoColor: '#16233f',
+    };
+    WL.save();
+  }
+  return u.bizData;
+}
+function initials(name){ return (name||'S').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+function renderStats() {
+  const s = WL.get();
+  const mine = s.userJobs.length;
+  document.getElementById('emp-stats').innerHTML = `
+    <div class="dash-stat"><div class="num">${mine}</div><div class="lbl">Active Postings</div></div>
+    <div class="dash-stat"><div class="num">${12 + mine*3}</div><div class="lbl">Applicants</div></div>
+    <div class="dash-stat"><div class="num">${s.contacted.length}</div><div class="lbl">Candidates Contacted</div></div>
+    <div class="dash-stat"><div class="num">${WL.candidates().filter(c=>c.metro===biz().metro).length}</div><div class="lbl">Techs In Your Pool</div></div>`;
+  document.getElementById('emp-plan-badge').textContent = s.user.plan || 'Pro';
+  document.getElementById('emp-sub').textContent = `${biz().company} · ${biz().metro} City Pool`;
+}
+
+document.querySelectorAll('#emp-nav .sidebar-item').forEach(a => a.addEventListener('click', () => {
+  document.querySelectorAll('#emp-nav .sidebar-item').forEach(x => x.classList.remove('active'));
+  a.classList.add('active'); renderSection(a.dataset.sec);
+}));
+
+function renderSection(sec) {
+  const b = biz(), s = WL.get(), main = document.getElementById('emp-main');
+
+  if (sec === 'business') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="profile-header">
+          <div class="avatar-circle" style="background:${b.logoColor};border-radius:8px;">${initials(b.company)}</div>
+          <div class="profile-name"><h3>${escapeHtml(b.company)}</h3><p>${escapeHtml(b.type)} · ${escapeHtml(b.metro)}, OH</p></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Business Profile</h2></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Shop / Company Name</label><input class="form-input" id="b-company" value="${escapeHtml(b.company)}"></div>
+          <div class="form-group"><label class="form-label">Shop Type</label>
+            <select class="form-select" id="b-type">${['Auto Repair Shop','Auto Body / Collision Shop','Dealership Service Dept.','Fleet Maintenance','Multi-Location Group'].map(t=>`<option ${t===b.type?'selected':''}>${t}</option>`).join('')}</select></div>
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label class="form-label">City Pool</label><select class="form-select" id="b-metro">${WL.cities().map(c=>`<option ${c.name===b.metro?'selected':''}>${c.name}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Team Size</label>
+            <select class="form-select" id="b-size">${['1–4 employees','5–15 employees','16–40 employees','40+ employees'].map(t=>`<option ${t===b.size?'selected':''}>${t}</option>`).join('')}</select></div>
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="b-phone" value="${escapeHtml(b.phone)}" placeholder="(614) 555-0100"></div>
+          <div class="form-group"><label class="form-label">Website</label><input class="form-input" id="b-web" value="${escapeHtml(b.website)}" placeholder="yourshop.com"></div>
+        </div>
+        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Street Address</label><input class="form-input" id="b-addr" value="${escapeHtml(b.address)}" placeholder="123 Main St, Columbus, OH"></div>
+        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Business Description</label><textarea class="form-input" id="b-desc" style="min-height:140px;">${escapeHtml(b.description)}</textarea></div>
+        <button class="btn-sm" style="margin-top:1rem;" onclick="saveBiz()">Save Business Profile</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Perks &amp; Benefits</h2></div>
+        <div class="skills-grid" id="perk-list">${b.perks.map((p,i)=>`<span class="skill-tag highlight">${escapeHtml(p)} <a class="link-accent" onclick="removePerk(${i})" style="color:var(--accent);">✕</a></span>`).join('')}</div>
+        <div style="display:flex;gap:0.5rem;margin-top:1rem;max-width:360px;"><input class="form-input" id="new-perk" placeholder="Add a perk…"><button class="btn-sm" onclick="addPerk()">Add</button></div>
+      </div>`;
+    return;
+  }
+
+  if (sec === 'jobs') {
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>My Job Postings</h2><button class="btn-sm" onclick="goSec('post')">${icon('plus')} Post a Job</button></div>
+      ${s.userJobs.length ? `<table class="data-table"><thead><tr><th>Position</th><th>Type</th><th>Pay</th><th>Applicants</th><th></th></tr></thead><tbody>${s.userJobs.map(j=>`
+        <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(j.title)}</td><td>${escapeHtml(j.type)} · ${escapeHtml(j.schedule)}</td><td>$${j.payMin}K–$${j.payMax}K</td><td><span class="badge blue">${3+Math.floor(j.payMax%7)}</span></td><td><a class="link-accent" onclick="deleteJob('${j.id}')">Remove</a></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty-state"><span class="emoji">${icon('list')}</span><h3>No postings yet</h3><p>Post your first job to start reaching technicians in your City Pool.</p><button class="btn-sm" style="margin-top:1rem;" onclick="goSec('post')">${icon('plus')} Post a Job</button></div>`}</div>`;
+    return;
+  }
+
+  if (sec === 'post') {
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Post a New Job</h2></div>
+      <div class="form-group"><label class="form-label">Job Title</label><input class="form-input" id="j-title" placeholder="Master Technician — Diagnostics"></div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">Job Type</label><select class="form-select" id="j-type"><option>Auto Repair</option><option>Auto Body</option></select></div>
+        <div class="form-group"><label class="form-label">Schedule</label><select class="form-select" id="j-sched"><option>Full-Time</option><option>Part-Time</option></select></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;grid-template-columns:1fr 1fr 1fr;">
+        <div class="form-group"><label class="form-label">Pay Min ($K)</label><input class="form-input" id="j-min" type="number" value="60"></div>
+        <div class="form-group"><label class="form-label">Pay Max ($K)</label><input class="form-input" id="j-max" type="number" value="85"></div>
+        <div class="form-group"><label class="form-label">Min Years Exp</label><input class="form-input" id="j-exp" type="number" value="3"></div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
+        <div class="form-group"><label class="form-label">Required Certs</label><input class="form-input" id="j-cert" placeholder="ASE Required"></div>
+        <div class="form-group"><label class="form-label">City</label><input class="form-input" id="j-city" value="${escapeHtml(b.metro)}, OH"></div>
+      </div>
+      <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Description</label><textarea class="form-input" id="j-desc" placeholder="Describe the role, the shop, and what you offer…"></textarea></div>
+      <button class="btn-sm" style="margin-top:1rem;" onclick="postJob()">Publish Job →</button></div>`;
+    return;
+  }
+
+  if (sec === 'candidates') {
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Search Talent</h2></div>
+      <div class="candidate-search">
+        <input class="search-input" id="c-search" placeholder="Search by skill, cert, role, or name…">
+        <select class="form-select" id="c-type" style="width:auto;"><option value="">All Types</option><option>Auto Repair</option><option>Auto Body</option></select>
+        <button class="search-btn" onclick="searchCands()">Search</button>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:1rem 0;">
+        <span class="filter-pill active" data-st="" onclick="setCandPill(this)">All Status</span>
+        <span class="filter-pill" data-st="active" onclick="setCandPill(this)"><span class="led" style="background:var(--green);"></span> Active Only</span>
+        <span class="filter-pill" data-st="passive" onclick="setCandPill(this)"><span class="led" style="background:var(--amber);"></span> Passive</span>
+      </div>
+      <div class="candidate-cards" id="cand-results"></div></div>`;
+    searchCands();
+    return;
+  }
+
+  if (sec === 'apps') {
+    // synthesize applicants from candidates for demo realism
+    const cands = WL.candidates().filter(c => c.metro === b.metro);
+    const pool = cands.length ? cands : WL.candidates().slice(0,4);
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Applicants</h2></div>
+      <table class="data-table"><thead><tr><th>Candidate</th><th>Applied For</th><th>Status</th><th></th></tr></thead><tbody>${pool.map((c,i)=>`
+        <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(c.name)}</td><td>${escapeHtml(['Master Technician','Body Tech','EV Specialist','General Service'][i%4])}</td>
+        <td><span class="badge ${['blue','yellow','green','muted'][i%4]}">${['Under Review','Interview','Offer','New'][i%4]}</span></td>
+        <td><a class="link-accent" onclick="showToast('Opening conversation with ${escapeHtml(c.name)}…')">Message</a></td></tr>`).join('')}</tbody></table></div>`;
+    return;
+  }
+}
+
+function goSec(sec){ document.querySelectorAll('#emp-nav .sidebar-item').forEach(x=>x.classList.toggle('active', x.dataset.sec===sec)); renderSection(sec); }
+
+// ---- business mutations ----
+function saveBiz(){ const b=biz(),u=WL.get().user;
+  b.company=document.getElementById('b-company').value; u.company=b.company; u.name=b.company;
+  b.type=document.getElementById('b-type').value; b.metro=document.getElementById('b-metro').value; u.metro=b.metro;
+  b.size=document.getElementById('b-size').value; b.phone=document.getElementById('b-phone').value;
+  b.website=document.getElementById('b-web').value; b.address=document.getElementById('b-addr').value;
+  b.description=document.getElementById('b-desc').value;
+  WL.save(); renderStats(); renderNav(); showToast('Business profile saved.'); }
+function addPerk(){ const i=document.getElementById('new-perk'); if(!i.value.trim())return; biz().perks.push(i.value.trim()); WL.save(); renderSection('business'); }
+function removePerk(i){ biz().perks.splice(i,1); WL.save(); renderSection('business'); }
+
+// ---- jobs ----
+function postJob(){
+  const b=biz();
+  const title=document.getElementById('j-title').value.trim();
+  if(!title){ showToast('Add a job title first.', true); return; }
+  const job={ id:'u'+Date.now(), title, shop:b.company, logo:initials(b.company), city:document.getElementById('j-city').value, metro:b.metro,
+    distance: Math.floor(2+Math.random()*15), type:document.getElementById('j-type').value, schedule:document.getElementById('j-sched').value,
+    payMin:+document.getElementById('j-min').value||0, payMax:+document.getElementById('j-max').value||0, cert:document.getElementById('j-cert').value||'Experience Required',
+    exp:+document.getElementById('j-exp').value||0, color:b.logoColor, desc:document.getElementById('j-desc').value||'Join our team.' };
+  WL.get().userJobs.unshift(job); WL.save(); renderStats(); showToast('Job published to the '+b.metro+' City Pool!'); goSec('jobs');
+}
+function deleteJob(id){ const arr=WL.get().userJobs; const i=arr.findIndex(j=>j.id===id); if(i>-1)arr.splice(i,1); WL.save(); renderStats(); renderSection('jobs'); showToast('Posting removed.'); }
+
+// ---- candidate search ----
+let candStatus = '';
+function setCandPill(el){ document.querySelectorAll('#emp-main .filter-pill').forEach(p=>p.classList.remove('active')); el.classList.add('active'); candStatus=el.dataset.st; searchCands(); }
+function searchCands(){
+  const q=(document.getElementById('c-search')?.value||'').toLowerCase();
+  const type=document.getElementById('c-type')?.value||'';
+  let list = WL.candidates().filter(c=>{
+    if(candStatus && c.status!==candStatus) return false;
+    if(type && c.type!==type) return false;
+    if(q && !(`${c.name} ${c.role} ${c.tags.join(' ')} ${c.city}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const box=document.getElementById('cand-results');
+  if(!list.length){ box.innerHTML=`<div class="empty-state"><span class="emoji">${icon('search')}</span><h3>No candidates</h3><p>Try a different search or status.</p></div>`; return; }
+  const contacted = WL.get().contacted;
+  box.innerHTML=list.map(c=>`
+    <div class="candidate-card">
+      <div class="cand-avatar" style="background:${c.color};">${c.initials}</div>
+      <div class="cand-info"><div class="cand-name">${escapeHtml(c.name)}</div><div class="cand-role">${escapeHtml(c.role)} · ${c.exp} yrs · ${escapeHtml(c.city)}</div>
+        <div class="cand-tags">${c.tags.map(t=>`<span class="cand-tag">${escapeHtml(t)}</span>`).join('')}</div></div>
+      <div class="cand-rating"><div class="stars">${stars(c.rating)}</div><div class="rating-num">${c.rating.toFixed(1)}</div></div>
+      <div class="cand-status-dot" style="background:${statusColor(c.status)};" title="${statusLabel(c.status)}"></div>
+      <div class="cand-actions"><button class="cand-btn" onclick="showToast('Viewing ${escapeHtml(c.name)}\\'s vault…')">View</button>
+        <button class="cand-btn primary" onclick="contactCand('${c.id}','${escapeHtml(c.name)}')">${contacted.includes(c.id)?'Messaged':'Message'}</button></div>
+    </div>`).join('');
+}
+function contactCand(id,name){ if(!WL.get().contacted.includes(id)) WL.get().contacted.push(id); WL.save(); renderStats(); searchCands(); showToast('Message sent to '+name+'!'); }
+
+if (WL.get().user && (WL.get().user.type === 'employer' || WL.get().user.type === 'admin')) {
+  renderStats(); renderSection('business');
+}
+</script>
+</body>
+</html>

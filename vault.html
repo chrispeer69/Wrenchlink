@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Vault — WrenchLink</title>
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Technician Vault</div>
+    <h1>My <em>vault</em></h1>
+    <p>Your complete professional profile — certifications, specialties, work history, salary target, and availability. Everything an employer sees, all in one place.</p>
+  </div>
+
+  <div class="stat-row" id="vault-stats"></div>
+
+  <div class="app-layout">
+    <!-- RAIL NAV -->
+    <aside class="app-rail">
+      <div class="rail-title">My Vault</div>
+      <div class="rail-group" id="vault-nav">
+        <a class="sidebar-item active" data-sec="overview"><span class="icon" data-ic="folder"></span> Overview</a>
+        <a class="sidebar-item" data-sec="profile"><span class="icon" data-ic="user"></span> Profile &amp; Skills</a>
+        <a class="sidebar-item" data-sec="certs"><span class="icon" data-ic="badge"></span> Certifications</a>
+        <a class="sidebar-item" data-sec="history"><span class="icon" data-ic="briefcase"></span> Work History</a>
+        <a class="sidebar-item" data-sec="apps"><span class="icon" data-ic="chat"></span> Applications</a>
+        <a class="sidebar-item" data-sec="saved"><span class="icon" data-ic="heart"></span> Saved Jobs</a>
+      </div>
+      <div class="rail-title">Availability</div>
+      <div class="status-selector" id="vault-status">
+        <button class="status-btn" data-st="active"><span class="led"></span> Active</button>
+        <button class="status-btn" data-st="passive"><span class="led"></span> Passive</button>
+        <button class="status-btn" data-st="notlooking"><span class="led"></span> Off</button>
+      </div>
+    </aside>
+
+    <main id="vault-main"></main>
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav();
+renderFooter();
+if (!requireRole('tech')) { /* guard handles redirect */ }
+
+// ---- vault data model (persisted on user object) ----
+function vault() {
+  const u = WL.get().user;
+  if (!u.vaultData) {
+    u.vaultData = {
+      title: u.specialty || 'Auto Repair Technician',
+      headline: 'Skilled technician ready for the next opportunity.',
+      yearsExp: 5,
+      rating: 5.0, reviews: 0,
+      salaryMin: 55, salaryTarget: 75, salaryMax: 110,
+      skills: ['Engine Diagnostics','Brake Systems','Suspension','Electrical'],
+      certs: [{ name:'ASE A1 — Engine Repair', exp:'2027' }],
+      history: [{ logo:'WL', company:'Current Shop', role:'Technician', years:'2022 – Present', loc: u.metro+', '+(u.metro?'OH':'') }],
+    };
+    WL.save();
+  }
+  return u.vaultData;
+}
+
+function initials(name){ return (name||'U').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+function renderStats() {
+  const s = WL.get();
+  document.getElementById('vault-stats').innerHTML = `
+    <div class="dash-stat"><div class="num">${s.appliedJobs.length}</div><div class="lbl">Applications Sent</div></div>
+    <div class="dash-stat"><div class="num">${s.savedJobs.length}</div><div class="lbl">Saved Jobs</div></div>
+    <div class="dash-stat"><div class="num">${vault().certs.length}</div><div class="lbl">Certifications</div></div>
+    <div class="dash-stat"><div class="num">${vault().skills.length}</div><div class="lbl">Specializations</div></div>`;
+}
+
+// availability buttons
+function paintStatus() {
+  const st = WL.get().techStatus;
+  document.querySelectorAll('#vault-status .status-btn').forEach(b => {
+    b.classList.remove('active-green','active-yellow','active-red');
+    if (b.dataset.st === st) b.classList.add(st==='active'?'active-green':st==='passive'?'active-yellow':'active-red');
+  });
+}
+document.querySelectorAll('#vault-status .status-btn').forEach(b => b.addEventListener('click', () => {
+  WL.set({ techStatus: b.dataset.st });
+  paintStatus();
+  showToast('Availability set to ' + statusLabel(b.dataset.st) + '.');
+}));
+
+// section nav
+document.querySelectorAll('#vault-nav .sidebar-item').forEach(a => a.addEventListener('click', () => {
+  document.querySelectorAll('#vault-nav .sidebar-item').forEach(x => x.classList.remove('active'));
+  a.classList.add('active');
+  renderSection(a.dataset.sec);
+}));
+
+function renderSection(sec) {
+  const u = WL.get().user, v = vault(), s = WL.get();
+  const main = document.getElementById('vault-main');
+
+  if (sec === 'overview') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="profile-header">
+          <div class="avatar-circle">${initials(u.name)}</div>
+          <div class="profile-name">
+            <h3>${escapeHtml(u.name)}</h3>
+            <p>${escapeHtml(v.title)} — ${u.metro} Pool</p>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.4rem;">
+              <span style="color:var(--accent2);">${stars(v.rating)}</span>
+              <span style="font-size:0.78rem;color:var(--muted);">${v.rating.toFixed(1)} · ${v.reviews} reviews</span>
+              <span class="badge ${s.techStatus==='active'?'green':s.techStatus==='passive'?'yellow':'muted'}">${statusLabel(s.techStatus)}</span>
+            </div>
+          </div>
+        </div>
+        <p style="color:var(--chrome);margin-top:1rem;line-height:1.6;">${escapeHtml(v.headline)}</p>
+      </div>
+      <div class="panel">
+        <div class="profile-section-title">Salary Expectation</div>
+        <div class="salary-range"><div style="flex:1;">
+          <div class="salary-track"><div class="salary-fill" style="width:${Math.round((v.salaryTarget-v.salaryMin)/(v.salaryMax-v.salaryMin)*100)}%;"></div></div>
+          <div class="salary-vals"><span>$${v.salaryMin}K</span><span style="color:var(--accent);font-weight:700;">$${v.salaryTarget}K target</span><span>$${v.salaryMax}K</span></div>
+        </div></div>
+      </div>
+      <div class="panel">
+        <div class="profile-section-title">Specializations</div>
+        <div class="skills-grid">${v.skills.map(sk=>`<span class="skill-tag highlight">${escapeHtml(sk)}</span>`).join('')}</div>
+      </div>`;
+    return;
+  }
+
+  if (sec === 'profile') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><h2>Edit Profile</h2></div>
+        <div class="form-group"><label class="form-label">Professional Title</label><input class="form-input" id="e-title" value="${escapeHtml(v.title)}"></div>
+        <div class="form-group" style="margin-top:1rem;"><label class="form-label">Headline / Bio</label><textarea class="form-input" id="e-headline">${escapeHtml(v.headline)}</textarea></div>
+        <div class="form-row" style="margin-top:1rem;">
+          <div class="form-group"><label class="form-label">Years Experience</label><input class="form-input" id="e-years" type="number" value="${v.yearsExp}"></div>
+          <div class="form-group"><label class="form-label">City Pool</label><select class="form-select" id="e-metro"></select></div>
+        </div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Salary Target ($K)</div>
+        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
+          <div class="form-group"><label class="form-label">Min</label><input class="form-input" id="e-smin" type="number" value="${v.salaryMin}"></div>
+          <div class="form-group"><label class="form-label">Target</label><input class="form-input" id="e-starget" type="number" value="${v.salaryTarget}"></div>
+          <div class="form-group"><label class="form-label">Max</label><input class="form-input" id="e-smax" type="number" value="${v.salaryMax}"></div>
+        </div>
+        <button class="btn-sm" style="margin-top:1.25rem;" onclick="saveProfile()">Save Profile</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Specializations</h2></div>
+        <div class="skills-grid" id="skill-edit">${v.skills.map((sk,i)=>`<span class="skill-tag highlight">${escapeHtml(sk)} <a class="link-accent" onclick="removeSkill(${i})" style="color:var(--accent);">✕</a></span>`).join('')}</div>
+        <div style="display:flex;gap:0.5rem;margin-top:1rem;max-width:360px;">
+          <input class="form-input" id="new-skill" placeholder="Add a skill…">
+          <button class="btn-sm" onclick="addSkill()">Add</button>
+        </div>
+      </div>`;
+    const ms = document.getElementById('e-metro');
+    ms.innerHTML = WL.cities().map(c=>`<option ${c.name===u.metro?'selected':''}>${c.name}</option>`).join('');
+    return;
+  }
+
+  if (sec === 'certs') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><h2>Certifications &amp; Credentials</h2></div>
+        <div class="cert-list" id="cert-list">${v.certs.map((c,i)=>`
+          <div class="cert-item"><span class="cert-icon">${iconSvg('badge')}</span><span class="cert-name">${escapeHtml(c.name)}</span><span class="cert-date">Exp. ${escapeHtml(c.exp)}</span><a class="link-accent" onclick="removeCert(${i})">Remove</a></div>`).join('')||'<p style="color:var(--muted);">No certifications yet.</p>'}</div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Add Certification</div>
+        <div class="form-row" style="grid-template-columns:2fr 1fr;">
+          <div class="form-group"><label class="form-label">Credential Name</label><input class="form-input" id="c-name" placeholder="ASE Master Technician (A1–A8)"></div>
+          <div class="form-group"><label class="form-label">Expires</label><input class="form-input" id="c-exp" placeholder="2027"></div>
+        </div>
+        <button class="btn-sm" style="margin-top:1rem;" onclick="addCert()">Add Certification</button>
+      </div>`;
+    return;
+  }
+
+  if (sec === 'history') {
+    main.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><h2>Work History</h2></div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;" id="hist-list">${v.history.map((h,i)=>`
+          <div style="padding:0.75rem 1rem;background:var(--carbon);border-radius:var(--radius);border:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
+            <div class="shop-logo" style="width:40px;height:40px;">${h.logo}</div>
+            <div style="flex:1;">
+              <div style="font-family:'Inter', sans-serif;font-weight:800;text-transform:uppercase;">${escapeHtml(h.company)} — ${escapeHtml(h.role)}</div>
+              <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(h.years)} · ${escapeHtml(h.loc)}</div>
+            </div>
+            <a class="link-accent" onclick="removeHist(${i})">Remove</a>
+          </div>`).join('')||'<p style="color:var(--muted);">No work history yet.</p>'}</div>
+        <div class="profile-section-title" style="margin-top:1.5rem;">Add Position</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Shop / Company</label><input class="form-input" id="h-company"></div>
+          <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="h-role"></div></div>
+        <div class="form-row" style="margin-top:0.75rem;"><div class="form-group"><label class="form-label">Years (e.g. 2019–2024)</label><input class="form-input" id="h-years"></div>
+          <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="h-loc"></div></div>
+        <button class="btn-sm" style="margin-top:1rem;" onclick="addHist()">Add Position</button>
+      </div>`;
+    return;
+  }
+
+  if (sec === 'apps') {
+    const jobs = WL.allJobs().filter(j => s.appliedJobs.includes(j.id));
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>My Applications</h2><a href="jobs.html" class="btn-sm ghost">Browse Jobs</a></div>
+      ${jobs.length ? `<table class="data-table"><thead><tr><th>Position</th><th>Shop</th><th>Pay</th><th>Status</th></tr></thead><tbody>${jobs.map(j=>`
+        <tr><td style="color:var(--white);font-weight:600;">${escapeHtml(j.title)}</td><td>${escapeHtml(j.shop)}</td><td>$${j.payMin}K–$${j.payMax}K</td><td><span class="badge blue">Under Review</span></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty-state"><span class="emoji">${icon('chat')}</span><h3>No applications yet</h3><p>Head to the job browser and apply with one click.</p></div>`}</div>`;
+    return;
+  }
+
+  if (sec === 'saved') {
+    const jobs = WL.allJobs().filter(j => s.savedJobs.includes(j.id));
+    main.innerHTML = `<div class="panel"><div class="panel-head"><h2>Saved Jobs</h2><a href="jobs.html" class="btn-sm ghost">Browse Jobs</a></div>
+      ${jobs.length ? `<div class="job-listings">${jobs.map(j=>`
+        <div class="job-card"><div class="shop-logo" style="background:${j.color};">${j.logo}</div>
+        <div class="job-info"><div class="job-title">${escapeHtml(j.title)}</div><div class="job-shop">${escapeHtml(j.shop)} — ${escapeHtml(j.city)}</div>
+        <div class="job-meta"><span>${icon('dollar')} <strong>$${j.payMin}K–$${j.payMax}K</strong></span><span>${icon('clock')} <strong>${j.schedule}</strong></span></div></div>
+        <div class="job-actions"><a href="jobs.html" class="apply-btn">View</a></div></div>`).join('')}</div>`
+      : `<div class="empty-state"><span class="emoji">${icon('heart')}</span><h3>No saved jobs</h3><p>Tap the heart on any listing to save it here.</p></div>`}</div>`;
+    return;
+  }
+}
+
+// ---- mutations ----
+function saveProfile() {
+  const v = vault(), u = WL.get().user;
+  v.title = document.getElementById('e-title').value;
+  v.headline = document.getElementById('e-headline').value;
+  v.yearsExp = +document.getElementById('e-years').value || 0;
+  u.metro = document.getElementById('e-metro').value;
+  v.salaryMin = +document.getElementById('e-smin').value || 0;
+  v.salaryTarget = +document.getElementById('e-starget').value || 0;
+  v.salaryMax = +document.getElementById('e-smax').value || 0;
+  WL.save(); renderStats(); showToast('Profile saved.'); renderNav();
+}
+function addSkill(){ const i=document.getElementById('new-skill'); if(!i.value.trim())return; vault().skills.push(i.value.trim()); WL.save(); renderSection('profile'); renderStats(); }
+function removeSkill(i){ vault().skills.splice(i,1); WL.save(); renderSection('profile'); renderStats(); }
+function addCert(){ const n=document.getElementById('c-name').value.trim(), e=document.getElementById('c-exp').value.trim(); if(!n)return; vault().certs.push({name:n,exp:e||'—'}); WL.save(); renderSection('certs'); renderStats(); showToast('Certification added.'); }
+function removeCert(i){ vault().certs.splice(i,1); WL.save(); renderSection('certs'); renderStats(); }
+function addHist(){ const c=document.getElementById('h-company').value.trim(); if(!c)return; vault().history.push({logo:initials(c),company:c,role:document.getElementById('h-role').value||'Technician',years:document.getElementById('h-years').value||'—',loc:document.getElementById('h-loc').value||''}); WL.save(); renderSection('history'); showToast('Position added.'); }
+function removeHist(i){ vault().history.splice(i,1); WL.save(); renderSection('history'); }
+
+if (WL.get().user && WL.get().user.type === 'tech') {
+  renderStats(); paintStatus(); renderSection('overview');
+}
+</script>
+</body>
+</html>

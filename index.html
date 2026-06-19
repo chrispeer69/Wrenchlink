@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WrenchLink — Where Automotive Talent Meets Opportunity</title>
+<meta name="description" content="WrenchLink connects elite auto repair and auto body technicians with the shops that need them most.">
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-badge"><span class="dot-live"></span> The auto industry talent platform</div>
+  <h1>Where wrenches meet <em>opportunity</em></h1>
+  <p class="hero-sub">
+    WrenchLink connects elite auto repair and auto body technicians with the shops that need them most — fast, precise, and built for the trade.
+  </p>
+  <div class="hero-actions">
+    <a href="vault.html" class="btn-primary" onclick="if(!WL.isLoggedIn()){openModal('register');return false;}"><span data-ic="wrench"></span> I'm a Technician</a>
+    <a href="employer.html" class="btn-secondary" onclick="if(!WL.isLoggedIn()){openModal('employer');return false;}"><span data-ic="building"></span> I'm an Employer</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-item"><div class="stat-num">12<span>K+</span></div><div class="stat-label">Verified Technicians</div></div>
+    <div class="stat-item"><div class="stat-num">3<span>K+</span></div><div class="stat-label">Active Shops</div></div>
+    <div class="stat-item"><div class="stat-num">94<span>%</span></div><div class="stat-label">Placement Rate</div></div>
+    <div class="stat-item"><div class="stat-num">48<span>h</span></div><div class="stat-label">Avg. Match Time</div></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" id="how-it-works">
+  <div class="section-tag">Process</div>
+  <h2 class="section-title">How <em>WrenchLink</em> works</h2>
+  <p class="section-sub">Two portals. One platform. Built for the way the auto industry actually operates.</p>
+
+  <div class="hiw-grid">
+    <div class="hiw-panel">
+      <div class="hiw-tab-header"><span class="hiw-tab"><span data-ic="wrench"></span> Technician</span></div>
+      <div class="hiw-steps">
+        <div class="hiw-step"><div class="step-num">1</div><div class="step-body"><h4>Build Your Vault</h4><p>Enter your certifications (ASE, I-CAR, OEM), specialties, work history, and salary expectations. Set your availability status — actively looking, passively open, or not available.</p></div></div>
+        <div class="hiw-step"><div class="step-num">2</div><div class="step-body"><h4>Join a City Pool</h4><p>Select your metro area to be discovered by local employers. You control your visibility. Employers in your pool can view your profile and reach out proactively.</p></div></div>
+        <div class="hiw-step"><div class="step-num">3</div><div class="step-body"><h4>One-Click Apply</h4><p>Browse matched jobs and apply instantly with your saved vault. No re-entering information, no cover letters — your work history does the talking.</p></div></div>
+        <div class="hiw-step"><div class="step-num">4</div><div class="step-body"><h4>Get Hired, Get Paid</h4><p>Communicate directly with shops via secure in-platform messaging. Compare offers, negotiate salary, and accept — all in WrenchLink.</p></div></div>
+      </div>
+    </div>
+
+    <div class="hiw-panel">
+      <div class="hiw-tab-header"><span class="hiw-tab emp"><span data-ic="building"></span> Employer</span></div>
+      <div class="hiw-steps">
+        <div class="hiw-step"><div class="step-num">1</div><div class="step-body"><h4>Create a Shop Profile</h4><p>Showcase your shop — brand, specialties, certifications, culture, and compensation packages. Build trust with technicians before they apply.</p></div></div>
+        <div class="hiw-step"><div class="step-num">2</div><div class="step-body"><h4>Post Open Positions</h4><p>Create detailed job listings with required certs, pay range, shift type, and required experience level. Reach technicians in your City Pool automatically.</p></div></div>
+        <div class="hiw-step"><div class="step-num">3</div><div class="step-body"><h4>Search & Filter Candidates</h4><p>Search the full technician database by skill, cert, experience, location, and availability status. Save favorites and build shortlists.</p></div></div>
+        <div class="hiw-step"><div class="step-num">4</div><div class="step-body"><h4>Reach Out Directly</h4><p>Message candidates directly through WrenchLink's encrypted messaging system. Track applications, schedule interviews, and extend offers in one place.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH PORTAL PREVIEW -->
+<section class="portal-preview" id="technicians">
+  <div class="section-tag">Technician Portal</div>
+  <h2 class="section-title">Your career, <em>your controls</em></h2>
+  <p class="section-sub">A professional vault built for the trade — certifications, specialties, salary, and status all in one place.</p>
+
+  <div class="preview-tabs">
+    <button class="preview-tab active" onclick="showTab('profile', this)"><span data-ic="user"></span> Profile Builder</button>
+    <button class="preview-tab" onclick="showTab('jobs', this)"><span data-ic="search"></span> Job Browser</button>
+  </div>
+
+  <div id="tab-profile">
+    <div class="portal-card">
+      <div class="portal-topbar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span style="margin-left:0.75rem;font-family:'Inter', sans-serif;font-size:0.72rem;color:var(--muted);">wrenchlink.io/vault/marcus-t</span>
+      </div>
+      <div class="portal-content">
+        <div class="profile-builder">
+          <div class="profile-header">
+            <div class="avatar-circle">MT</div>
+            <div class="profile-name">
+              <h3>Marcus Thompson</h3>
+              <p>Master Auto Technician — Mechanical &amp; Diagnostics</p>
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.4rem;">
+                <span class="stars">★★★★★</span>
+                <span style="font-size:0.78rem;color:var(--muted);">4.9 · 47 reviews</span>
+              </div>
+            </div>
+            <div style="margin-left:auto;">
+              <div style="font-size:0.72rem;color:var(--muted);letter-spacing:0.03em;text-transform:uppercase;margin-bottom:0.45rem;">Availability</div>
+              <div class="status-selector">
+                <button class="status-btn active-green"><span class="led"></span> Active</button>
+                <button class="status-btn"><span class="led"></span> Passive</button>
+                <button class="status-btn"><span class="led"></span> Not Looking</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="profile-section-title">Specializations</div>
+            <div class="skills-grid">
+              <span class="skill-tag highlight">Engine Diagnostics</span>
+              <span class="skill-tag highlight">Transmission Rebuild</span>
+              <span class="skill-tag">Brake Systems</span>
+              <span class="skill-tag">Electrical / ADAS</span>
+              <span class="skill-tag">Suspension</span>
+              <span class="skill-tag">A/C Systems</span>
+              <span class="skill-tag">Hybrid / EV</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="profile-section-title">Certifications &amp; Credentials</div>
+            <div class="cert-list">
+              <div class="cert-item"><span class="cert-icon" data-ic="badge"></span><span class="cert-name">ASE Master Technician (A1–A8)</span><span class="cert-date">Exp. 2026</span></div>
+              <div class="cert-item"><span class="cert-icon" data-ic="bolt"></span><span class="cert-name">ASE L1 Advanced Engine Performance</span><span class="cert-date">Exp. 2025</span></div>
+              <div class="cert-item"><span class="cert-icon" data-ic="shield"></span><span class="cert-name">EV/Hybrid Safety Certification</span><span class="cert-date">Exp. 2027</span></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="profile-section-title">Salary Expectation</div>
+            <div style="padding:0.85rem;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--line);">
+              <div class="salary-range"><div style="flex:1;">
+                <div class="salary-track"><div class="salary-fill"></div></div>
+                <div class="salary-vals"><span>$55K</span><span style="color:var(--accent);font-weight:600;">$78K target</span><span>$120K</span></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-jobs" style="display:none;">
+    <div class="portal-card">
+      <div class="portal-topbar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span style="margin-left:0.75rem;font-family:'Inter', sans-serif;font-size:0.72rem;color:var(--muted);">wrenchlink.io/jobs — Columbus Metro Pool</span>
+      </div>
+      <div class="portal-content">
+        <div class="job-listings" id="home-job-preview"></div>
+        <div style="text-align:center;margin-top:1.5rem;">
+          <a href="jobs.html" class="btn-primary">Browse All Jobs <span data-ic="arrow"></span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-tag">Platform Features</div>
+  <h2 class="section-title">Everything the <em>trade needs</em></h2>
+  <p class="section-sub">Purpose-built features for an industry that runs on skill, speed, and trust.</p>
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon" data-ic="bolt"></div><div class="feature-title">One-Click Apply</div><p class="feature-desc">Technicians apply to any job instantly using their saved vault. No forms, no PDFs — just tap and apply.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="badge"></div><div class="feature-title">Verified Credentials</div><p class="feature-desc">ASE, I-CAR, OEM, and trade certifications are verified and displayed prominently on every profile.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="map"></div><div class="feature-title">City Pool Network</div><p class="feature-desc">Geo-targeted talent pools connect local shops with local technicians — no relocation guesswork.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="chat"></div><div class="feature-title">Direct Messaging</div><p class="feature-desc">Employers and technicians communicate directly through encrypted in-platform messaging. No third-party required.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="star"></div><div class="feature-title">Rating System</div><p class="feature-desc">Verified employer reviews build technician reputation over time, rewarding quality work and professionalism.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="search"></div><div class="feature-title">Smart Candidate Search</div><p class="feature-desc">Filter candidates by cert, specialty, years of experience, salary range, location, and live availability status.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="list"></div><div class="feature-title">Job Post Management</div><p class="feature-desc">Employers manage all open positions, track applications, and monitor posting performance from one dashboard.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="signal"></div><div class="feature-title">Availability Signals</div><p class="feature-desc">Technicians set Active, Passive, or Not Looking status in real time — no more cold-messaging unavailable candidates.</p></div>
+    <div class="feature-card"><div class="feature-icon" data-ic="dollar"></div><div class="feature-title">Salary Transparency</div><p class="feature-desc">Technicians set salary targets. Employers post real pay ranges. No surprises at the offer stage.</p></div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-banner">
+  <div class="cta-inner">
+    <h2>Ready to <em>wrench up</em> your career?</h2>
+    <p>Join thousands of technicians and shops already on WrenchLink.</p>
+    <div class="cta-actions">
+      <a href="#" class="btn-primary" onclick="openModal('register');return false;"><span data-ic="wrench"></span> Create Tech Vault</a>
+      <a href="#" class="btn-secondary" onclick="openModal('employer');return false;"><span data-ic="building"></span> Post Your First Job</a>
+    </div>
+  </div>
+</section>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav('how');
+renderFooter();
+
+function showTab(tabId, el) {
+  document.getElementById('tab-profile').style.display = 'none';
+  document.getElementById('tab-jobs').style.display = 'none';
+  document.getElementById('tab-' + tabId).style.display = 'block';
+  document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+document.querySelectorAll('#tab-profile .status-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#tab-profile .status-btn').forEach(b => b.classList.remove('active-green','active-yellow','active-red'));
+    if (this.textContent.includes('Active')) this.classList.add('active-green');
+    else if (this.textContent.includes('Passive')) this.classList.add('active-yellow');
+    else this.classList.add('active-red');
+  });
+});
+
+(function(){
+  const jobs = WL.allJobs().filter(j => j.metro === 'Columbus').slice(0,3);
+  document.getElementById('home-job-preview').innerHTML = jobs.map(j => `
+    <div class="job-card">
+      <div class="shop-logo" style="background:${j.color};">${j.logo}</div>
+      <div class="job-info">
+        <div class="job-title">${j.title}</div>
+        <div class="job-shop">${j.shop} — ${j.city}</div>
+        <div class="job-meta">
+          <span>${icon('pin')} <strong>${j.distance} mi away</strong></span>
+          <span>${icon('dollar')} <strong>$${j.payMin}K–$${j.payMax}K</strong></span>
+          <span>${icon('clock')} <strong>${j.schedule}</strong></span>
+          <span>${icon('badge')} <strong>${j.cert}</strong></span>
+        </div>
+      </div>
+      <div class="job-actions">
+        <a href="jobs.html" class="apply-btn">${icon('bolt')} 1-Click Apply</a>
+      </div>
+    </div>`).join('');
+})();
+</script>
+</body>
+</html>

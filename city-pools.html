@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Pools — WrenchLink</title>
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">City Pool Network</div>
+    <h1>Find talent in your <em>metro market</em></h1>
+    <p>Technicians opt into local City Pools — giving shops hyper-targeted access to available talent in their market. Pick a region, then dive into a city.</p>
+  </div>
+
+  <div style="display:flex;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap;" id="region-filters">
+    <span class="filter-pill active" data-r="">All Markets</span>
+    <span class="filter-pill" data-r="Midwest">Midwest</span>
+    <span class="filter-pill" data-r="Southeast">Southeast</span>
+    <span class="filter-pill" data-r="Northeast">Northeast</span>
+    <span class="filter-pill" data-r="Southwest">Southwest</span>
+    <span class="filter-pill" data-r="West">West</span>
+  </div>
+
+  <div class="city-grid" id="city-grid"></div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav('city');
+renderFooter();
+
+let region = '';
+document.querySelectorAll('#region-filters .filter-pill').forEach(p => p.addEventListener('click', () => {
+  document.querySelectorAll('#region-filters .filter-pill').forEach(x=>x.classList.remove('active'));
+  p.classList.add('active'); region = p.dataset.r; render();
+}));
+
+function render() {
+  const cities = WL.cities().filter(c => !region || c.region === region);
+  const grid = document.getElementById('city-grid');
+  grid.innerHTML = cities.map(c => `
+    <div class="city-card" onclick="window.location.href='jobs.html'">
+      <div class="city-name">${c.name}</div>
+      <div class="city-state">${c.state} · ${c.region}</div>
+      <div class="city-counts">
+        <div class="city-count"><strong>${c.techs}</strong><br><span style="color:var(--muted);font-size:0.72rem;">Technicians</span></div>
+        <div class="city-count"><strong>${c.jobs}</strong><br><span style="color:var(--muted);font-size:0.72rem;">Open Jobs</span></div>
+      </div>
+    </div>`).join('') + `
+    <div class="city-card" style="border-style:dashed;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.4rem;" onclick="showToast('Request received — we\\'ll notify you when your city launches!')">
+      <div style="font-size:1.5rem;">+</div>
+      <div class="city-name" style="font-size:0.95rem;">Request Your City</div>
+      <div class="city-state">Coming Soon</div>
+    </div>`;
+}
+render();
+</script>
+</body>
+</html>

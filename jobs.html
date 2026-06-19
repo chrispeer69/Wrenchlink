@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find Jobs — WrenchLink</title>
+<link rel="icon" href="assets/img/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav></nav>
+
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Job Browser</div>
+    <h1>Find your next <em>bay</em></h1>
+    <p>Search verified openings from real shops across every City Pool. Filter by type, pay, schedule, and certifications — then apply with one click using your vault.</p>
+  </div>
+
+  <div class="app-layout">
+    <!-- FILTER RAIL -->
+    <aside class="app-rail">
+      <div class="rail-title">Search</div>
+      <input class="search-input" id="job-search" type="text" placeholder="Title, shop, or skill…" style="width:100%;">
+
+      <div class="rail-title">City Pool</div>
+      <select class="form-select" id="filter-metro"><option value="">All Cities</option></select>
+
+      <div class="rail-title">Job Type</div>
+      <div class="rail-group">
+        <label class="rail-check"><input type="checkbox" class="f-type" value="Auto Repair"> Auto Repair</label>
+        <label class="rail-check"><input type="checkbox" class="f-type" value="Auto Body"> Auto Body / Collision</label>
+      </div>
+
+      <div class="rail-title">Schedule</div>
+      <div class="rail-group">
+        <label class="rail-check"><input type="checkbox" class="f-sched" value="Full-Time"> Full-Time</label>
+        <label class="rail-check"><input type="checkbox" class="f-sched" value="Part-Time"> Part-Time</label>
+      </div>
+
+      <div class="rail-title">Minimum Pay</div>
+      <div class="rail-range">
+        <input type="range" id="filter-pay" min="0" max="110" step="5" value="0">
+        <div style="font-size:0.8rem;color:var(--chrome);margin-top:0.3rem;">$<output id="pay-out">0</output>K+ base</div>
+      </div>
+
+      <button class="rail-reset" onclick="resetFilters()">Reset Filters</button>
+    </aside>
+
+    <!-- RESULTS -->
+    <main>
+      <div class="results-bar">
+        <div class="results-count"><strong id="result-n">0</strong> openings match</div>
+        <select class="sort-select" id="sort">
+          <option value="pay-desc">Highest Pay</option>
+          <option value="pay-asc">Lowest Pay</option>
+          <option value="dist">Nearest</option>
+          <option value="exp">Least Experience</option>
+        </select>
+      </div>
+      <div class="job-listings" id="job-results"></div>
+    </main>
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/footer.js"></script>
+<script>
+renderNav('jobs');
+renderFooter();
+
+// populate metro filter
+document.getElementById('filter-metro').innerHTML += WL.cities().map(c => `<option>${c.name}</option>`).join('');
+
+const payOut = document.getElementById('pay-out');
+document.getElementById('filter-pay').addEventListener('input', e => { payOut.textContent = e.target.value; render(); });
+document.getElementById('job-search').addEventListener('input', render);
+document.getElementById('filter-metro').addEventListener('change', render);
+document.getElementById('sort').addEventListener('change', render);
+document.querySelectorAll('.f-type, .f-sched').forEach(c => c.addEventListener('change', render));
+
+function resetFilters() {
+  document.getElementById('job-search').value = '';
+  document.getElementById('filter-metro').value = '';
+  document.getElementById('filter-pay').value = 0;
+  payOut.textContent = '0';
+  document.querySelectorAll('.f-type, .f-sched').forEach(c => c.checked = false);
+  render();
+}
+
+function currentFilters() {
+  return {
+    q: document.getElementById('job-search').value.trim().toLowerCase(),
+    metro: document.getElementById('filter-metro').value,
+    types: [...document.querySelectorAll('.f-type:checked')].map(c => c.value),
+    scheds: [...document.querySelectorAll('.f-sched:checked')].map(c => c.value),
+    pay: +document.getElementById('filter-pay').value,
+    sort: document.getElementById('sort').value,
+  };
+}
+
+function render() {
+  const f = currentFilters();
+  let jobs = WL.allJobs().filter(j => {
+    if (f.q && !(`${j.title} ${j.shop} ${j.cert} ${j.type} ${j.city}`.toLowerCase().includes(f.q))) return false;
+    if (f.metro && j.metro !== f.metro) return false;
+    if (f.types.length && !f.types.includes(j.type)) return false;
+    if (f.scheds.length && !f.scheds.includes(j.schedule)) return false;
+    if (j.payMax < f.pay) return false;
+    return true;
+  });
+
+  jobs.sort((a,b) => {
+    switch (f.sort) {
+      case 'pay-asc': return a.payMin - b.payMin;
+      case 'dist': return (a.distance||99) - (b.distance||99);
+      case 'exp': return a.exp - b.exp;
+      default: return b.payMax - a.payMax;
+    }
+  });
+
+  document.getElementById('result-n').textContent = jobs.length;
+  const state = WL.get();
+  const box = document.getElementById('job-results');
+
+  if (!jobs.length) {
+    box.innerHTML = `<div class="empty-state"><span class="emoji">${icon('search')}</span><h3>No matches</h3><p>Try widening your filters or resetting.</p></div>`;
+    return;
+  }
+
+  box.innerHTML = jobs.map(j => {
+    const applied = state.appliedJobs.includes(j.id);
+    const saved = state.savedJobs.includes(j.id);
+    return `
+    <div class="job-card">
+      <div class="shop-logo" style="background:${j.color};">${j.logo}</div>
+      <div class="job-info">
+        <div class="job-title">${escapeHtml(j.title)}</div>
+        <div class="job-shop">${escapeHtml(j.shop)} — ${escapeHtml(j.city)} <span class="badge muted" style="margin-left:0.4rem;">${j.metro} Pool</span></div>
+        <div class="job-meta">
+          <span>${icon('pin')} <strong>${j.distance} mi</strong></span>
+          <span>${icon('dollar')} <strong>$${j.payMin}K–$${j.payMax}K</strong></span>
+          <span>${icon('clock')} <strong>${j.schedule}</strong></span>
+          <span>${icon('badge')} <strong>${escapeHtml(j.cert)}</strong></span>
+          <span>${icon('briefcase')} <strong>${j.exp}+ yrs</strong></span>
+        </div>
+        <p style="font-size:0.85rem;color:var(--muted);margin-top:0.6rem;line-height:1.5;">${escapeHtml(j.desc)}</p>
+      </div>
+      <div class="job-actions">
+        <button class="apply-btn" ${applied?'disabled':''} onclick="applyJob('${j.id}', this)">${applied?icon('check')+' Applied':icon('bolt')+' 1-Click Apply'}</button>
+        <button class="save-btn ${saved?'saved':''}" onclick="saveJob('${j.id}', this)">${saved?icon('heart')+' Saved':icon('heart')+' Save'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyJob(id, btn) {
+  if (!WL.isLoggedIn()) { showToast('Sign in as a technician to apply.', true); openModal('register'); return; }
+  if (WL.get().user.type !== 'tech') { showToast('Only technician accounts can apply.', true); return; }
+  if (!WL.get().appliedJobs.includes(id)) WL.get().appliedJobs.push(id);
+  WL.save();
+  btn.disabled = true; btn.innerHTML = icon('check') + ' Applied';
+  showToast('Application sent. The shop will be in touch within 24h.');
+}
+
+function saveJob(id, btn) {
+  if (!WL.isLoggedIn()) { showToast('Sign in to save jobs.', true); openModal('login'); return; }
+  const on = WL.toggleArray('savedJobs', id);
+  btn.classList.toggle('saved', on);
+  btn.innerHTML = on ? icon('heart') + ' Saved' : icon('heart') + ' Save';
+}
+
+render();
+</script>
+</body>
+</html>
