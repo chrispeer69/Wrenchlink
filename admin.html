@@ -49,8 +49,8 @@ renderNav();
 renderFooter();
 
 // ---- admin guard (allow admin; offer quick admin sign-in otherwise) ----
-const _u = WL.get().user;
-if (!_u || _u.type !== 'admin') {
+const _u = WL_DEV ? wlDevEnsure('admin') : WL.get().user;
+if (!WL_DEV && (!_u || _u.type !== 'admin')) {
   document.querySelector('.page').innerHTML = `
     <div class="page-head"><div class="section-tag">Restricted</div><h1>Admin <em>sign-in</em></h1>
     <p>This is the platform master console. Sign in with an administrator account to continue.</p></div>

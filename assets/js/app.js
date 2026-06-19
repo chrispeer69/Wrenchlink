@@ -3,6 +3,31 @@
    nav state, auth modal, toast, route guards
    ============================================================ */
 
+/* ============================================================
+   DEV MODE — open access while building.
+   Set WL_DEV = false before public launch to restore sign-in guards.
+   ============================================================ */
+const WL_DEV = true;
+
+function wlDemoDate(monthsAgo) {
+  const d = new Date(); d.setMonth(d.getMonth() - monthsAgo);
+  return d.toISOString().slice(0, 10);
+}
+function wlMakeDemo(role) {
+  if (role === 'tech') return { type:'tech', name:'Marcus Thompson', email:'marcus@demo.wrenchlink.io', metro:'Columbus', specialty:'Master Auto Technician', plan:'Solo', price:9.95, joined: wlDemoDate(4) };
+  if (role === 'employer') return { type:'employer', name:'Apex Body & Auto', company:'Apex Body & Auto', shoptype:'Auto Body / Collision Shop', email:'hiring@apex.demo.io', metro:'Columbus', plan:'Pro', joined: wlDemoDate(4) };
+  return { type:'admin', name:'Platform Admin', email:'admin@wrenchlink.io' };
+}
+// ensure a demo identity of the given role exists & is active (persists edits per role)
+function wlDevEnsure(role) {
+  const s = WL.get();
+  s.devUsers = s.devUsers || {};
+  if (!s.devUsers[role]) s.devUsers[role] = wlMakeDemo(role);
+  s.user = s.devUsers[role];
+  WL.save();
+  return s.user;
+}
+
 /* ---------- TOAST ---------- */
 function showToast(msg, isError) {
   let t = document.getElementById('toast');
@@ -215,10 +240,39 @@ function renderNav(active) {
     <div class="nav-ctas">${ctas}</div>`;
   const existing = document.querySelector('nav');
   if (existing) existing.replaceWith(nav); else document.body.prepend(nav);
+
+  renderDevBar();
+}
+
+/* ---------- DEV TOOLBAR ---------- */
+function renderDevBar() {
+  if (!WL_DEV) return;
+  if (document.getElementById('dev-bar')) return;
+  const links = [
+    ['index.html','Home'], ['jobs.html','Jobs'], ['vault.html','Vault'],
+    ['employer.html','Employer'], ['billing.html','Billing'], ['admin.html','Admin'],
+    ['city-pools.html','Pools'], ['pricing.html','Pricing'], ['legal.html','Legal'],
+  ];
+  const bar = document.createElement('div');
+  bar.id = 'dev-bar';
+  bar.className = 'dev-bar';
+  bar.innerHTML =
+    '<span class="dev-tag">DEV</span>' +
+    links.map(l => `<a href="${l[0]}">${l[1]}</a>`).join('') +
+    '<button onclick="wlDevReset()" title="Clear all demo data">Reset</button>' +
+    '<button onclick="document.getElementById(\'dev-bar\').remove()" title="Hide bar">✕</button>';
+  document.body.appendChild(bar);
+}
+function wlDevReset() {
+  try { localStorage.removeItem(WL.KEY); localStorage.removeItem('wl_cookie_consent'); } catch (e) {}
+  WL._state = null;
+  showToast('Demo data reset.');
+  setTimeout(() => window.location.reload(), 500);
 }
 
 /* ---------- ROUTE GUARD ---------- */
 function requireRole(role) {
+  if (WL_DEV) { wlDevEnsure(role); return true; }   // dev: open access, auto-provision role
   const user = WL.get().user;
   if (!user) { showToast('Please sign in to continue.', true); setTimeout(() => { ensureModal(); openModal('login'); }, 300); return false; }
   if (role && user.type !== role && user.type !== 'admin') {

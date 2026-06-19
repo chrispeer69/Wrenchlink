@@ -331,6 +331,15 @@ textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.5; }
 .modal-switch { font-size: 0.82rem; color: var(--muted); text-align: center; }
 .modal-switch a { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600; }
 
+/* ── DEV TOOLBAR ── */
+.dev-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 4000; display: flex; align-items: center; gap: 0.15rem; flex-wrap: wrap; padding: 0.3rem 0.6rem; background: #0d1014; border-top: 1px solid #2a2f3a; box-shadow: 0 -2px 12px rgba(0,0,0,0.2); }
+.dev-bar .dev-tag { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; color: #0d1014; background: var(--accent); padding: 0.12rem 0.4rem; border-radius: 4px; margin-right: 0.4rem; }
+.dev-bar a { font-size: 0.78rem; font-weight: 500; color: #c8cdd6; text-decoration: none; padding: 0.25rem 0.55rem; border-radius: 5px; transition: background 0.15s, color 0.15s; }
+.dev-bar a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.dev-bar button { margin-left: 0.2rem; font-size: 0.72rem; font-weight: 600; color: #8a92a1; background: transparent; border: 1px solid #2a2f3a; border-radius: 5px; padding: 0.2rem 0.5rem; cursor: pointer; font-family: inherit; }
+.dev-bar button:hover { color: #fff; border-color: #3a4150; }
+.dev-bar button:last-child { margin-left: auto; }
+
 /* ── COOKIE BANNER ── */
 .cookie-banner { position: fixed; left: 1.25rem; right: 1.25rem; bottom: 1.25rem; z-index: 2500; background: #fff; border: 1px solid var(--line-2); border-radius: var(--radius); box-shadow: var(--shadow-3); padding: 1rem 1.25rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; max-width: 740px; margin: 0 auto; }
 .cookie-banner p { font-size: 0.85rem; color: var(--text-dim); margin: 0; flex: 1; min-width: 240px; line-height: 1.5; }

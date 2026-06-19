@@ -86,7 +86,8 @@ renderFooter();
 
 // guard: members only
 (function(){
-  const u = WL.get().user;
+  let u = WL.get().user;
+  if (WL_DEV && (!u || u.type === 'admin')) u = wlDevEnsure('employer');
   if (!u) { document.querySelector('.app-layout').style.display='none'; showToast('Please sign in to view billing.', true); setTimeout(()=>{ensureModal();openModal('login');},300); return; }
   if (u.type === 'admin') { window.location.href = 'admin.html'; return; }
   Billing.ensure();
