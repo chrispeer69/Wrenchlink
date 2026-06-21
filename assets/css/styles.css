@@ -537,6 +537,9 @@ table.data-table tr:hover td { background: var(--surface); }
 .price-card .price small { color: var(--muted); font-size: 0.9rem; font-weight: 500; }
 .alert { padding: 0.85rem 1rem; background: rgba(21,145,91,0.08); color: var(--green); border: 1px solid rgba(21,145,91,0.2); border-radius: var(--radius-sm); }
 .alert-warn { background: rgba(200,129,10,0.08); color: var(--amber); border-color: rgba(200,129,10,0.2); }
+.flash-messages { position: fixed; top: 76px; right: 1.25rem; z-index: 2200; width: min(420px, calc(100vw - 2.5rem)); display: flex; flex-direction: column; gap: .5rem; }
+.flash-messages .alert { box-shadow: var(--shadow-2); background: #f2fbf7; }
+.flash-messages .alert-warn { background: #fff9ee; }
 .errorlist { color: var(--red); font-size: 0.8rem; list-style: none; padding: 0; }
 .footer-inner { display: flex; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
 .footer-inner p { color: var(--muted); margin-top: 0.7rem; }

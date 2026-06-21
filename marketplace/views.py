@@ -519,7 +519,7 @@ def employer_job_status(request, job_id):
     if status == Job.Status.ACTIVE and not was_active:
         _notify_job_match(job)
     messages.success(request, f"Job marked {job.get_status_display().lower()}.")
-    return redirect("employer_dashboard")
+    return redirect("/employer/#jobs")
 
 
 @login_required

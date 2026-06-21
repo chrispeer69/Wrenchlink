@@ -148,6 +148,20 @@ class MarketplaceTests(TestCase):
             404,
         )
 
+    def test_job_status_change_returns_to_jobs_without_blank_flash_page(self):
+        self.client.force_login(self.employer_user)
+        response = self.client.post(
+            reverse("employer_job_status", args=[self.job.id]),
+            {"status": Job.Status.PAUSED},
+        )
+        self.assertRedirects(
+            response,
+            "/employer/#jobs",
+            fetch_redirect_response=False,
+        )
+        self.job.refresh_from_db()
+        self.assertEqual(self.job.status, Job.Status.PAUSED)
+
     def test_invite_offer_and_accept_workflow(self):
         self.client.force_login(self.employer_user)
         response = self.client.post(

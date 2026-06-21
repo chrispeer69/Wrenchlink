@@ -38,7 +38,7 @@
   </nav>
 
   {% if messages %}
-    <div class="page" style="padding-bottom:0;">
+    <div class="flash-messages" aria-live="polite">
       {% for message in messages %}
         <div class="alert {% if message.tags == 'error' %}alert-warn{% endif %}">{{ message }}</div>
       {% endfor %}
