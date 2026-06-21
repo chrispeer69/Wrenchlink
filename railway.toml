@@ -1,6 +1,6 @@
 [build]
 builder = "RAILPACK"
-buildCommand = "python manage.py collectstatic --noinput"
+buildCommand = "SKIP_DATABASE_CONFIG=True python manage.py collectstatic --noinput"
 
 [deploy]
 preDeployCommand = "python manage.py migrate --noinput"

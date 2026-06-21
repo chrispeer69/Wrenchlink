@@ -87,8 +87,10 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = "config.wsgi.application"
 
-use_postgres = env_bool("USE_POSTGRES", False) or bool(
-    env("DATABASE_URL") or env("PGHOST") or env("DB_HOST")
+skip_database_config = env_bool("SKIP_DATABASE_CONFIG", False)
+use_postgres = not skip_database_config and (
+    env_bool("USE_POSTGRES", False)
+    or bool(env("DATABASE_URL") or env("PGHOST") or env("DB_HOST"))
 )
 if use_postgres:
     DATABASES = {

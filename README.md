@@ -151,7 +151,7 @@ Subscribe it to customer subscription and invoice events.
 
 Railway runs:
 
-- build: `python manage.py collectstatic --noinput`
+- build: `SKIP_DATABASE_CONFIG=True python manage.py collectstatic --noinput`
 - pre-deploy: `python manage.py migrate --noinput`
 - start: Gunicorn
 
