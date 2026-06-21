@@ -73,12 +73,16 @@ class MarketplaceTests(TestCase):
         self.assertEqual(Job.objects.count(), 1)
 
     @override_settings(SECURE_SSL_REDIRECT=True)
-    def test_railway_healthcheck_works_with_railway_hostname(self):
-        response = self.client.get(
-            reverse("health"), HTTP_HOST="healthcheck.railway.app"
+    def test_health_endpoint_also_requires_https(self):
+        response = self.client.get(reverse("health"), HTTP_HOST="localhost")
+        self.assertEqual(response.status_code, 301)
+        self.assertTrue(response["Location"].startswith("https://"))
+
+        secure_response = self.client.get(
+            reverse("health"), HTTP_HOST="localhost", secure=True
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, b"ok")
+        self.assertEqual(secure_response.status_code, 200)
+        self.assertEqual(secure_response.content, b"ok")
 
     def test_application_requires_post(self):
         self.client.force_login(self.tech_user)

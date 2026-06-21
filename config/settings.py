@@ -31,8 +31,6 @@ ALLOWED_HOSTS = [
     for host in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if host.strip()
 ]
-if "healthcheck.railway.app" not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append("healthcheck.railway.app")
 railway_domain = env("RAILWAY_PUBLIC_DOMAIN")
 if railway_domain and railway_domain not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(railway_domain)
@@ -207,7 +205,6 @@ CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
-SECURE_REDIRECT_EXEMPT = [r"^health/$"]
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
