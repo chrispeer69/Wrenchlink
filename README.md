@@ -106,13 +106,17 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://${{RAILWAY_PUBLIC_DOMAIN}},https://staging.w
 Mail variables:
 
 ```text
-EMAIL_HOST=
+EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
-EMAIL_HOST_USER=
-EMAIL_HOST_PASSWORD=
-DEFAULT_FROM_EMAIL=
+EMAIL_HOST_USER=<Gmail address>
+EMAIL_HOST_PASSWORD=<Google app password>
+DEFAULT_FROM_EMAIL=<same Gmail address or verified sender>
 ```
+
+For Gmail, use a Google App Password rather than the normal account password.
+Two-step verification must be enabled on the Google account before creating an
+App Password.
 
 Private document storage without AWS:
 

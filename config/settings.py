@@ -184,7 +184,7 @@ EMAIL_BACKEND = env(
     if env("EMAIL_HOST_USER")
     else "django.core.mail.backends.console.EmailBackend",
 )
-EMAIL_HOST = env("EMAIL_HOST") or "smtp.office365.com"
+EMAIL_HOST = env("EMAIL_HOST") or "smtp.gmail.com"
 EMAIL_PORT = int(env("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
