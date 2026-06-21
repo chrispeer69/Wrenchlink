@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Updates — WrenchLink{% endblock %}
+{% block content %}
+<div class="page notification-page">
+  <div class="page-head"><div class="section-tag">Account updates</div><h1>Your <em>notifications</em></h1><p>Application, invitation, credential, offer, and message activity appears here.</p></div>
+  <section class="panel">
+    <div class="panel-head"><h2>Recent activity</h2><form method="post" action="{% url 'mark_notifications_read' %}">{% csrf_token %}<button class="btn-sm ghost" type="submit">Mark all read</button></form></div>
+    <div class="record-list">{% for item in notifications %}<article class="record-card {% if not item.is_read %}notification-unread{% endif %}"><div><strong>{{ item.title }}</strong><span>{{ item.body }} · {{ item.created_at|date:"M j, Y g:i A" }}</span></div>{% if item.link %}<a class="btn-sm ghost" href="{{ item.link }}">Open</a>{% endif %}</article>{% empty %}<div class="empty-compact">No updates yet.</div>{% endfor %}</div>
+  </section>
+</div>
+{% endblock %}

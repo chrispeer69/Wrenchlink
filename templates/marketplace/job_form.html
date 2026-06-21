@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} — WrenchLink{% endblock %}
+{% block content %}
+<div class="page job-editor-page">
+  <div class="job-editor-head">
+    <div><div class="section-tag">Employer tools</div><h1>{{ heading }}</h1><p>Create a clear, credible listing technicians can scan quickly on desktop or mobile.</p></div>
+    <a class="btn-sm ghost" href="{% url 'employer_dashboard' %}">Back to dashboard</a>
+  </div>
+  <form method="post" class="job-editor">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <section class="panel job-editor-section">
+      <div class="editor-section-number">01</div><div class="editor-section-content"><h2>Position</h2><p>Use a specific trade title and select the market where the work is based.</p><div class="form-grid">{% for field in form %}{% if field.name == "title" or field.name == "city_pool" or field.name == "category" or field.name == "schedule" %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</div></div>
+    </section>
+    <section class="panel job-editor-section">
+      <div class="editor-section-number">02</div><div class="editor-section-content"><h2>Compensation and requirements</h2><p>Transparent details improve qualified applications.</p><div class="form-grid">{% for field in form %}{% if field.name == "pay_min" or field.name == "pay_max" or field.name == "experience_years" or field.name == "certification_requirement" %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</div></div>
+    </section>
+    <section class="panel job-editor-section">
+      <div class="editor-section-number">03</div><div class="editor-section-content"><h2>Role details</h2><p>Explain the work, team, equipment, schedule expectations, and what success looks like.</p>{% for field in form %}{% if field.name == "description" or field.name == "benefits_text" %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endif %}{% endfor %}</div>
+    </section>
+    <section class="panel job-editor-section">
+      <div class="editor-section-number">04</div><div class="editor-section-content"><h2>Publication</h2><p>Save as draft until ready, or publish it to the live job browser.</p>{% for field in form %}{% if field.name == "status" %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</div>
+    </section>
+    <div class="job-editor-submit"><a class="btn-sm ghost" href="{% url 'employer_dashboard' %}">Cancel</a><button class="btn-primary" type="submit">{{ submit_label }}</button></div>
+  </form>
+</div>
+{% endblock %}

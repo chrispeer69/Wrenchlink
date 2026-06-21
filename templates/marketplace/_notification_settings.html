@@ -1,0 +1,25 @@
+<form method="post" class="notification-settings-form">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="notifications">
+  <div class="notification-table">
+    <div class="notification-row notification-head">
+      <span>Event</span><span>In dashboard</span><span>Email</span>
+    </div>
+    <div class="notification-row">
+      <strong>Messages</strong><label>{{ preference_form.in_app_messages }}<span>In dashboard</span></label><label>{{ preference_form.email_messages }}<span>Email</span></label>
+    </div>
+    <div class="notification-row">
+      <strong>Application activity</strong><label>{{ preference_form.in_app_applications }}<span>In dashboard</span></label><label>{{ preference_form.email_applications }}<span>Email</span></label>
+    </div>
+    <div class="notification-row">
+      <strong>Invitations and offers</strong><label>{{ preference_form.in_app_offers }}<span>In dashboard</span></label><label>{{ preference_form.email_offers }}<span>Email</span></label>
+    </div>
+    <div class="notification-row">
+      <strong>Credential requests</strong><label>{{ preference_form.in_app_credentials }}<span>In dashboard</span></label><label>{{ preference_form.email_credentials }}<span>Email</span></label>
+    </div>
+    <div class="notification-row">
+      <strong>Matching jobs</strong><label>{{ preference_form.in_app_job_matches }}<span>In dashboard</span></label><label>{{ preference_form.email_job_matches }}<span>Email</span></label>
+    </div>
+  </div>
+  <div class="form-actions"><button class="btn-sm" type="submit">Save notification settings</button></div>
+</form>

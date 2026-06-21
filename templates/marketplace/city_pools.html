@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}City Pools — WrenchLink{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">City Pool Network</div>
+    <h1>Find talent in your <em>metro market</em></h1>
+    <p>Technicians opt into local City Pools, giving shops focused access to available talent in their market.</p>
+  </div>
+  <form method="get" style="display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+    <button class="filter-pill {% if not selected_region %}active{% endif %}" name="region" value="" type="submit">All Markets</button>
+    {% for value,label in regions %}<button class="filter-pill {% if selected_region == value %}active{% endif %}" name="region" value="{{ value }}" type="submit">{{ label }}</button>{% endfor %}
+  </form>
+  <div class="city-grid">
+    {% for pool in pools %}
+      <a class="city-card" href="{% url 'jobs' %}?metro={{ pool.slug }}">
+        <div class="city-name">{{ pool.name }}</div>
+        <div class="city-state">{{ pool.state }} · {{ pool.region }}</div>
+        <div class="city-counts">
+          <div class="city-count"><strong>{{ pool.technician_count }}</strong><br><span>Technicians</span></div>
+          <div class="city-count"><strong>{{ pool.open_job_count }}</strong><br><span>Open Jobs</span></div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="empty-state"><h3>No active City Pools yet</h3><p>An administrator can create the initial markets through the secure Django administration.</p></div>
+    {% endfor %}
+    <a class="city-card city-request-card" href="mailto:support@ustowalliance.com?subject=Request a WrenchLink City Pool"><div style="font-size:1.5rem;">+</div><div class="city-name" style="font-size:0.95rem;">Request Your City</div><div class="city-state">Coming Soon</div></a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — WrenchLink{% endblock %}
+{% block content %}
+<div class="page job-detail-page">
+  <a class="back-link" href="{% url 'jobs' %}">← Back to jobs</a>
+  <div class="job-detail-layout">
+    <main>
+      <header class="job-detail-hero">
+        <div class="job-logo job-logo-large">{{ job.employer.company_name|slice:":2"|upper }}</div>
+        <div>
+          <div class="section-tag">{{ job.get_category_display }}</div>
+          <h1>{{ job.title }}</h1>
+          <p><a class="link-accent" href="{% url 'employer_profile_detail' job.employer.id %}">{{ job.employer.company_name }}</a> · {{ job.city_pool }}</p>
+          <div class="job-tags"><span>{{ job.get_schedule_display }}</span><span>{{ job.experience_years }}+ years</span>{% if job.pay_min %}<span>${{ job.pay_min|floatformat:0 }}{% if job.pay_max %}–${{ job.pay_max|floatformat:0 }}{% endif %}/hr</span>{% endif %}{% if job.certification_requirement %}<span>{{ job.certification_requirement }}</span>{% endif %}</div>
+        </div>
+      </header>
+      <section class="panel job-copy"><h2>About the role</h2>{{ job.description|linebreaks }}</section>
+      {% if job.benefits %}<section class="panel"><h2>Benefits and shop advantages</h2><div class="benefit-grid">{% for benefit in job.benefits %}<div>✓ {{ benefit }}</div>{% endfor %}</div></section>{% endif %}
+      <section class="panel"><h2>About {{ job.employer.company_name }}</h2><p>{{ job.employer.description|default:"This employer has not added a company description yet." }}</p>{% if job.employer.website %}<a class="link-accent" href="{{ job.employer.website }}" rel="nofollow noopener" target="_blank">Visit company website</a>{% endif %}</section>
+    </main>
+    <aside class="job-apply-card panel">
+      <span class="badge green">Accepting applications</span>
+      <h2>Interested in this role?</h2>
+      <p>Your WrenchLink Vault profile is used for the application.</p>
+      {% if request.user.role == 'technician' %}
+        {% if application %}<a class="btn-primary full-button" href="{% url 'application_detail' application.id %}">View application</a>{% else %}<form method="post" action="{% url 'apply_job' job.id %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-primary full-button" type="submit">Apply now</button></form>{% endif %}
+        <form method="post" action="{% url 'save_job' job.id %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-sm ghost full-button" type="submit">{% if is_saved %}Remove saved job{% else %}Save for later{% endif %}</button></form>
+      {% elif not request.user.is_authenticated %}
+        <a class="btn-primary full-button" href="{% url 'accounts:login' %}?next={{ request.path }}">Sign in to apply</a>
+        <a class="btn-sm ghost full-button" href="{% url 'accounts:register_technician' %}">Create technician account</a>
+      {% else %}<p class="panel-subtitle">Technician accounts can apply to jobs.</p>{% endif %}
+      <div class="job-facts"><div><span>Market</span><strong>{{ job.city_pool }}</strong></div><div><span>Schedule</span><strong>{{ job.get_schedule_display }}</strong></div><div><span>Posted</span><strong>{{ job.created_at|date:"M j, Y" }}</strong></div></div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Join as a Technician — WrenchLink{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-shell auth-shell-form auth-shell-wide">
+    <section class="auth-main">
+      {% include "accounts/_auth_tabs.html" %}
+      <div class="section-tag">Technician account</div>
+      <h1>Build your Vault</h1>
+      <p class="auth-intro">Create one professional profile for your skills, credentials and applications.</p>
+      <form method="post" class="auth-form">
+        {% csrf_token %}{{ form.non_field_errors }}
+        <div class="auth-field-grid">
+          <div class="form-group"><label class="form-label">{{ form.first_name.label }}</label>{{ form.first_name }}{{ form.first_name.errors }}</div>
+          <div class="form-group"><label class="form-label">{{ form.last_name.label }}</label>{{ form.last_name }}{{ form.last_name.errors }}</div>
+        </div>
+        <div class="form-group"><label class="form-label">{{ form.email.label }}</label>{{ form.email }}{{ form.email.errors }}</div>
+        <div class="auth-field-grid">
+          <div class="form-group"><label class="form-label">{{ form.professional_title.label }}</label>{{ form.professional_title }}{{ form.professional_title.errors }}</div>
+          <div class="form-group"><label class="form-label">{{ form.city_pool.label }}</label>{{ form.city_pool }}{{ form.city_pool.errors }}</div>
+        </div>
+        <div class="auth-field-grid">
+          <div class="form-group"><label class="form-label">Password</label>{{ form.password1 }}{{ form.password1.errors }}</div>
+          <div class="form-group"><label class="form-label">Confirm password</label>{{ form.password2 }}{{ form.password2.errors }}</div>
+        </div>
+        <p class="auth-form-note">Use at least 8 characters and avoid common passwords.</p>
+        <button class="btn-submit auth-submit" type="submit">Create Technician Account →</button>
+      </form>
+      <p class="auth-bottom-link">Already registered? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+    </section>
+  </div>
+</div>
+{% endblock %}

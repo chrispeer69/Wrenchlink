@@ -1,0 +1,8 @@
+<div class="record-list">
+  {% for item in dashboard_notifications %}
+    <article class="record-card {% if not item.is_read %}notification-unread{% endif %}">
+      <div><strong>{{ item.title }}</strong><span>{{ item.body }} · {{ item.created_at|date:"M j, g:i A" }}</span></div>
+      {% if item.link %}<a class="btn-sm ghost" href="{{ item.link }}">Open</a>{% endif %}
+    </article>
+  {% empty %}<div class="empty-compact">No system updates yet.</div>{% endfor %}
+</div>

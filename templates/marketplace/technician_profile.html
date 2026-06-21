@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ profile }} — WrenchLink{% endblock %}
+{% block content %}
+<div class="page profile-detail-page">
+  <header class="profile-detail-header">
+    <div class="avatar-circle">{{ profile.user.first_name|first }}{{ profile.user.last_name|first }}</div>
+    <div><div class="section-tag">Technician profile</div><h1>{{ profile }}</h1><p>{{ profile.professional_title|default:"Automotive technician" }} · {{ profile.city_pool|default:"Location open" }} · {{ profile.years_experience }} years experience</p></div>
+    <span class="badge green">{{ profile.get_availability_display }}</span>
+  </header>
+  <div class="profile-detail-layout">
+    <main>
+      <section class="panel"><h2>Professional summary</h2><p>{{ profile.bio|default:"No professional summary added." }}</p><div class="job-tags">{% for skill in profile.skills %}<span>{{ skill }}</span>{% endfor %}</div></section>
+      <section class="panel"><h2>Work history</h2><div class="record-list">{% for item in profile.work_history.all %}<div class="record-card"><div><strong>{{ item.role }} at {{ item.company }}</strong><span>{{ item.start_date|date:"M Y" }} to {{ item.end_date|date:"M Y"|default:"Present" }} · {{ item.location }}</span>{% if item.description %}<p>{{ item.description }}</p>{% endif %}</div></div>{% empty %}<div class="empty-compact">No work history listed.</div>{% endfor %}</div></section>
+      <section class="panel"><h2>Education and training</h2><div class="record-list">{% for item in profile.education.all %}<div class="record-card"><div><strong>{{ item.program }}</strong><span>{{ item.school }}{% if item.completion_year %} · {{ item.completion_year }}{% endif %}</span></div></div>{% empty %}<div class="empty-compact">No education listed.</div>{% endfor %}</div></section>
+      <section class="panel"><h2>Employer reviews</h2><div class="record-list">{% for review in profile.reviews.all %}<div class="record-card"><div><strong>{{ review.average }} / 5 · {{ review.employer.company_name }}</strong><span>{{ review.comment|default:"Rating only" }}</span></div></div>{% empty %}<div class="empty-compact">No reviews yet.</div>{% endfor %}</div></section>
+    </main>
+    <aside>
+      <section class="panel"><h2>Credentials</h2><div class="record-list">{% for cert in profile.certifications.all %}<div class="record-card"><div><strong>{{ cert.name }}</strong><span>{{ cert.issuing_organization }} · {{ cert.get_status_display }}</span></div>{% if can_view_credentials and cert.file and cert.status == 'verified' %}<a class="btn-sm ghost" href="{% url 'serve_certification' cert.id %}">Download</a>{% endif %}</div>{% empty %}<div class="empty-compact">No credentials listed.</div>{% endfor %}</div></section>
+      {% if employer %}
+        <section class="panel"><h2>Employer actions</h2><form method="post" action="{% url 'request_credentials' profile.id %}">{% csrf_token %}<input type="hidden" name="credential_type" value="all"><button class="btn-sm ghost full-button" type="submit">Request credential access</button></form>{% if active_jobs %}<form method="post" action="{% url 'invite_candidate' profile.id %}" class="profile-invite-form">{% csrf_token %}<select class="form-select" name="job_id" required><option value="">Choose active job</option>{% for job in active_jobs %}<option value="{{ job.id }}">{{ job.title }}</option>{% endfor %}</select><textarea class="form-input" name="message" maxlength="600" rows="3" placeholder="Optional invitation note"></textarea><button class="btn-sm full-button" type="submit">Send invitation</button></form>{% endif %}</section>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

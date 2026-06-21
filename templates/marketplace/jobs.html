@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Find Jobs — WrenchLink{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-head"><div class="section-tag">Job Browser</div><h1>Find your next <em>bay</em></h1><p>Search open automotive positions by City Pool, specialty, schedule, pay, and experience.</p></div>
+  <form method="get" class="app-layout">
+    <aside class="app-rail">
+      <div class="rail-title">Search</div>
+      <input class="form-input" name="q" value="{{ request.GET.q }}" placeholder="Title, shop, keyword">
+      <div class="rail-title">City Pool</div>
+      <select class="form-select" name="metro"><option value="">All Cities</option>{% for pool in pools %}<option value="{{ pool.slug }}" {% if request.GET.metro == pool.slug %}selected{% endif %}>{{ pool }}</option>{% endfor %}</select>
+      <div class="rail-title">Specialty</div>
+      <select class="form-select" name="category"><option value="">All specialties</option>{% for value,label in categories %}<option value="{{ value }}" {% if request.GET.category == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <div class="rail-title">Schedule</div>
+      <select class="form-select" name="schedule"><option value="">Any schedule</option>{% for value,label in schedules %}<option value="{{ value }}" {% if request.GET.schedule == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="btn-submit" type="submit">Apply filters</button>
+      <a class="rail-reset" href="{% url 'jobs' %}" style="display:block;text-align:center;text-decoration:none;">Reset filters</a>
+    </aside>
+    <main>
+      <div class="results-bar">
+        <div class="results-count"><strong>{{ jobs|length }}</strong> position{{ jobs|length|pluralize }} found</div>
+        <select class="sort-select" name="sort" onchange="this.form.submit()"><option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest</option><option value="pay_desc" {% if selected_sort == 'pay_desc' %}selected{% endif %}>Highest Pay</option><option value="pay_asc" {% if selected_sort == 'pay_asc' %}selected{% endif %}>Lowest Pay</option><option value="experience" {% if selected_sort == 'experience' %}selected{% endif %}>Least Experience</option></select>
+      </div>
+      <div class="job-list">
+        {% for job in jobs %}
+          <article class="job-card">
+            <div class="job-logo">{{ job.employer.company_name|slice:":2"|upper }}</div>
+            <div class="job-main"><a href="{{ job.get_absolute_url }}"><h3>{{ job.title }}</h3></a><p>{{ job.employer.company_name }} — {{ job.city_pool }}</p><div class="job-tags"><span>{{ job.get_category_display }}</span><span>{{ job.get_schedule_display }}</span><span>{{ job.experience_years }}+ years</span>{% if job.pay_min %}<span>${{ job.pay_min|floatformat:0 }}{% if job.pay_max %}–${{ job.pay_max|floatformat:0 }}{% endif %}/hr</span>{% endif %}</div><p>{{ job.description|truncatewords:25 }}</p></div>
+            <div class="job-actions">
+              {% if request.user.role == 'technician' %}
+                <a class="btn-sm" href="{{ job.get_absolute_url }}">View &amp; Apply</a>
+                {% if job.id in saved_ids %}<span class="badge yellow">Saved</span>{% endif %}
+              {% else %}<a class="btn-sm" href="{{ job.get_absolute_url }}">View job</a>{% endif %}
+            </div>
+          </article>
+        {% empty %}<div class="empty-state"><h3>No matches</h3><p>Try widening your filters or resetting.</p></div>{% endfor %}
+      </div>
+    </main>
+  </form>
+</div>
+{% endblock %}

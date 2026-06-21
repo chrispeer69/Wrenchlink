@@ -1,0 +1,66 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}WrenchLink{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.ico' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <nav>
+    <a href="{% url 'home' %}" class="logo">WRENCH<span>LINK</span></a>
+    <button class="nav-toggle" type="button" aria-label="Toggle navigation" onclick="document.querySelector('.nav-links').classList.toggle('mobile-open')">☰</button>
+    <div class="nav-links">
+      <a href="{% url 'jobs' %}">Find Jobs</a>
+      <a href="{% url 'city_pools' %}">City Pools</a>
+      <a href="{% url 'home' %}#how-it-works">How It Works</a>
+      <a href="{% url 'home' %}#pricing">Pricing</a>
+    </div>
+    <div class="nav-ctas">
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'accounts:dashboard' %}" class="btn-nav-outline">
+          {% if request.user.is_staff %}Administration{% elif request.user.role == 'employer' %}Dashboard{% else %}My Vault{% endif %}
+        </a>
+        <form action="{% url 'accounts:logout' %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button class="btn-nav-fill" type="submit">Sign Out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn-nav-outline">Sign In</a>
+        <a href="{% url 'accounts:register_technician' %}" class="btn-nav-fill">Create Account</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  {% if messages %}
+    <div class="page" style="padding-bottom:0;">
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-warn{% endif %}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <a href="{% url 'home' %}" class="logo">WRENCH<span>LINK</span></a>
+        <p>Where automotive talent meets opportunity.</p>
+      </div>
+      <div class="footer-links">
+        <a href="{% url 'jobs' %}">Find Jobs</a>
+        <a href="{% url 'city_pools' %}">City Pools</a>
+        <a href="{% url 'home' %}#pricing">Pricing</a>
+        <a href="{% url 'legal' %}">Legal</a>
+      </div>
+    </div>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -17,20 +17,43 @@
 <!-- HERO -->
 <section class="hero" id="hero">
   <div class="hero-bg"></div>
-  <div class="hero-badge"><span class="dot-live"></span> The auto industry talent platform</div>
-  <h1>Where wrenches meet <em>opportunity</em></h1>
-  <p class="hero-sub">
-    WrenchLink connects elite auto repair and auto body technicians with the shops that need them most — fast, precise, and built for the trade.
-  </p>
-  <div class="hero-actions">
-    <a href="vault.html" class="btn-primary" onclick="if(!WL.isLoggedIn()){openModal('register');return false;}"><span data-ic="wrench"></span> I'm a Technician</a>
-    <a href="employer.html" class="btn-secondary" onclick="if(!WL.isLoggedIn()){openModal('employer');return false;}"><span data-ic="building"></span> I'm an Employer</a>
+  <div class="hero-copy">
+    <div class="hero-badge"><span class="dot-live"></span> The auto industry talent platform</div>
+    <h1>Where wrenches meet <em>opportunity</em></h1>
+    <p class="hero-sub">
+      WrenchLink connects elite auto repair and auto body technicians with the shops that need them most. Fast, precise, and built for the trade.
+    </p>
+    <div class="hero-actions">
+      <a href="vault.html" class="btn-primary" onclick="if(!WL.isLoggedIn()){openModal('register');return false;}"><span data-ic="wrench"></span> I'm a Technician</a>
+      <a href="employer.html" class="btn-secondary" onclick="if(!WL.isLoggedIn()){openModal('employer');return false;}"><span data-ic="building"></span> I'm an Employer</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item"><div class="stat-num">12<span>K+</span></div><div class="stat-label">Verified Technicians</div></div>
+      <div class="stat-item"><div class="stat-num">3<span>K+</span></div><div class="stat-label">Active Shops</div></div>
+      <div class="stat-item"><div class="stat-num">94<span>%</span></div><div class="stat-label">Placement Rate</div></div>
+      <div class="stat-item"><div class="stat-num">48<span>h</span></div><div class="stat-label">Avg. Match Time</div></div>
+    </div>
   </div>
-  <div class="hero-stats">
-    <div class="stat-item"><div class="stat-num">12<span>K+</span></div><div class="stat-label">Verified Technicians</div></div>
-    <div class="stat-item"><div class="stat-num">3<span>K+</span></div><div class="stat-label">Active Shops</div></div>
-    <div class="stat-item"><div class="stat-num">94<span>%</span></div><div class="stat-label">Placement Rate</div></div>
-    <div class="stat-item"><div class="stat-num">48<span>h</span></div><div class="stat-label">Avg. Match Time</div></div>
+  <div class="hero-visual" aria-hidden="true">
+    <div class="hero-visual-card">
+      <div class="hero-visual-head">
+        <div class="avatar-circle">MT</div>
+        <div><strong>Marcus Thompson</strong><span>ASE Master Technician · Columbus</span></div>
+        <span class="badge green" style="margin-left:auto;">Active</span>
+      </div>
+      <div class="hero-match">
+        <div class="hero-match-label">94% profile match</div>
+        <h3>Master Technician — Diagnostics</h3>
+        <p>Apex Body &amp; Auto · Columbus City Pool</p>
+        <div class="hero-match-footer"><span class="hero-match-pay">$75–$95/hr</span><span class="badge yellow">ASE Required</span></div>
+      </div>
+      <div class="hero-match">
+        <div class="hero-match-label">New opportunity</div>
+        <h3>EV Specialist Technician</h3>
+        <p>Precision Motors · Manufacturer training</p>
+        <div class="hero-match-footer"><span class="hero-match-pay">$85–$110/hr</span><span class="badge blue">EV / Hybrid</span></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -169,6 +192,19 @@
     <div class="feature-card"><div class="feature-icon" data-ic="list"></div><div class="feature-title">Job Post Management</div><p class="feature-desc">Employers manage all open positions, track applications, and monitor posting performance from one dashboard.</p></div>
     <div class="feature-card"><div class="feature-icon" data-ic="signal"></div><div class="feature-title">Availability Signals</div><p class="feature-desc">Technicians set Active, Passive, or Not Looking status in real time — no more cold-messaging unavailable candidates.</p></div>
     <div class="feature-card"><div class="feature-icon" data-ic="dollar"></div><div class="feature-title">Salary Transparency</div><p class="feature-desc">Technicians set salary targets. Employers post real pay ranges. No surprises at the offer stage.</p></div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="section-tag">Pricing</div>
+  <h2 class="section-title">Plans for <em>every shop</em></h2>
+  <p class="section-sub">Straightforward monthly plans for technicians, independent shops, growing teams, and multi-location groups.</p>
+  <div class="pricing-grid">
+    <div class="pricing-card"><div class="pricing-plan">Technician Solo</div><div class="pricing-price"><sup>$</sup>9.95<sub>/mo</sub></div><div class="pricing-desc">Your complete automotive career profile</div><ul class="pricing-features"><li>Unlimited one-click applications</li><li>Full professional Vault</li><li>City Pool visibility</li><li>Direct employer messaging</li></ul><a class="btn-plan btn-plan-outline" href="vault.html">Build Your Vault</a></div>
+    <div class="pricing-card"><div class="pricing-plan">Employer Starter</div><div class="pricing-price"><sup>$</sup>99<sub>/mo</sub></div><div class="pricing-desc">For small shops hiring occasionally</div><ul class="pricing-features"><li>2 active job postings</li><li>100 candidate views/mo</li><li>One City Pool</li><li>Applicant messaging</li></ul><a class="btn-plan btn-plan-outline" href="employer.html">Get Started</a></div>
+    <div class="pricing-card featured"><div class="featured-badge">Most Popular</div><div class="pricing-plan">Employer Pro</div><div class="pricing-price"><sup>$</sup>249<sub>/mo</sub></div><div class="pricing-desc">For shops actively growing their team</div><ul class="pricing-features"><li>10 active job postings</li><li>Unlimited candidate views</li><li>Three City Pools</li><li>Advanced filtering</li></ul><a class="btn-plan btn-plan-fill" href="employer.html">Get Started</a></div>
+    <div class="pricing-card"><div class="pricing-plan">Enterprise</div><div class="pricing-price pricing-custom">Custom</div><div class="pricing-desc">For dealerships and multi-location groups</div><ul class="pricing-features"><li>Unlimited job postings</li><li>National City Pool access</li><li>Dedicated account manager</li><li>Custom ATS integration</li></ul><a class="btn-plan btn-plan-outline" href="mailto:support@ustowalliance.com?subject=WrenchLink Enterprise">Contact Sales</a></div>
   </div>
 </section>
 

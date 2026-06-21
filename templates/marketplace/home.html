@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}WrenchLink — Where Automotive Talent Meets Opportunity{% endblock %}
+{% block content %}
+<main>
+  <section class="hero hero-django" id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-django-content">
+      <div class="hero-badge"><span class="dot-live"></span> The auto industry talent platform</div>
+      <h1>Where wrenches meet <em>opportunity</em></h1>
+      <p class="hero-sub">WrenchLink is the dedicated career platform for auto repair and auto body professionals, connecting skilled technicians with the shops that need them most.</p>
+      <div class="hero-actions">
+        <a href="{% url 'accounts:register_technician' %}" class="btn-primary">Build Your Vault →</a>
+        <a href="{% url 'accounts:register_employer' %}" class="btn-secondary">Hire Technicians</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item"><div class="stat-num">12<span>+</span></div><div class="stat-label">City Pools</div></div>
+        <div class="stat-item"><div class="stat-num">100<span>%</span></div><div class="stat-label">Automotive focused</div></div>
+        <div class="stat-item"><div class="stat-num">1<span>-click</span></div><div class="stat-label">Job applications</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-it-works" id="how-it-works">
+    <div class="section-tag">Process</div>
+    <h2 class="section-title">How <em>WrenchLink</em> works</h2>
+    <p class="section-sub">One focused platform for the people who fix vehicles and the businesses that rely on them.</p>
+    <div class="hiw-grid">
+      <div class="hiw-panel">
+        <div class="hiw-tab-header"><div class="hiw-tab">For Technicians</div></div>
+        <div class="hiw-steps">
+          <div class="hiw-step"><div class="step-num">1</div><div class="step-body"><h4>Build Your Vault</h4><p>Enter your certifications (ASE, I-CAR, OEM), specialties, work history, and salary expectations. Set your availability status — actively looking, passively open, or not available.</p></div></div>
+          <div class="hiw-step"><div class="step-num">2</div><div class="step-body"><h4>Join a City Pool</h4><p>Select your metro area to be discovered by local employers. You control your visibility. Employers in your pool can view your profile and reach out proactively.</p></div></div>
+          <div class="hiw-step"><div class="step-num">3</div><div class="step-body"><h4>One-Click Apply</h4><p>Browse matched jobs and apply instantly with your saved vault. No re-entering information, no cover letters — your work history does the talking.</p></div></div>
+          <div class="hiw-step"><div class="step-num">4</div><div class="step-body"><h4>Get Hired, Get Paid</h4><p>Communicate directly with shops via secure in-platform messaging. Compare offers, negotiate salary, and accept — all in WrenchLink.</p></div></div>
+        </div>
+      </div>
+      <div class="hiw-panel">
+        <div class="hiw-tab-header"><div class="hiw-tab emp">For Employers</div></div>
+        <div class="hiw-steps">
+          <div class="hiw-step"><div class="step-num">1</div><div class="step-body"><h4>Create a Shop Profile</h4><p>Showcase your shop — brand, specialties, certifications, culture, and compensation packages. Build trust with technicians before they apply.</p></div></div>
+          <div class="hiw-step"><div class="step-num">2</div><div class="step-body"><h4>Post Open Positions</h4><p>Create detailed job listings with required certs, pay range, shift type, and required experience level. Reach technicians in your City Pool automatically.</p></div></div>
+          <div class="hiw-step"><div class="step-num">3</div><div class="step-body"><h4>Search &amp; Filter Candidates</h4><p>Search the technician database by skill, certification, experience, location, and availability status. Save favorites and build shortlists.</p></div></div>
+          <div class="hiw-step"><div class="step-num">4</div><div class="step-body"><h4>Reach Out Directly</h4><p>Message candidates directly through WrenchLink. Track applications, schedule interviews, and extend offers in one place.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-tag">Technician Portal</div>
+    <h2 class="section-title">Your career, <em>your controls</em></h2>
+    <p class="section-sub">Your Vault is a living professional profile built specifically for automotive work.</p>
+    <div class="portal-card">
+      <div class="portal-topbar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+      <div class="portal-content">
+        <div class="profile-builder">
+          <div class="profile-header">
+            <div class="avatar-circle">MT</div>
+            <div class="profile-name"><h3>Marcus Thompson</h3><p>Master Auto Technician · Columbus, OH</p>
+              <div class="status-selector"><span class="status-btn active-green"><span class="led"></span>Actively Looking</span><span class="status-btn"><span class="led"></span>Passively Open</span></div>
+            </div>
+          </div>
+          <div><div class="profile-section-title">Specializations</div><div class="skills-grid"><span class="skill-tag highlight">ASE Master</span><span class="skill-tag highlight">EV / Hybrid</span><span class="skill-tag highlight">Diagnostics</span><span class="skill-tag">ADAS Calibration</span></div></div>
+          <div><div class="profile-section-title">Verified credentials</div><div class="cert-list"><div class="cert-item"><div class="cert-name">ASE Master Automobile Technician</div><div class="cert-date">Verified</div></div><div class="cert-item"><div class="cert-name">ASE L3 Light Duty Hybrid/EV</div><div class="cert-date">Verified</div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-tag">Open Opportunities</div>
+    <h2 class="section-title">Live jobs from <em>real shops</em></h2>
+    <p class="section-sub">Transparent pay, clear requirements, and direct access to the employer.</p>
+    <div class="job-list">
+      {% for job in jobs %}
+        <a class="job-card" href="{{ job.get_absolute_url }}">
+          <div class="job-logo">{{ job.employer.company_name|slice:":2"|upper }}</div>
+          <div class="job-main"><h3>{{ job.title }}</h3><p>{{ job.employer.company_name }} · {{ job.city_pool }}</p><div class="job-tags"><span>{{ job.get_schedule_display }}</span><span>{{ job.get_category_display }}</span>{% if job.pay_min %}<span>${{ job.pay_min|floatformat:0 }}–${{ job.pay_max|floatformat:0 }}/hr</span>{% endif %}</div></div>
+        </a>
+      {% empty %}<div class="empty-state"><h3>Jobs will appear here</h3><p>Employers can publish the first listings after registration.</p></div>{% endfor %}
+    </div>
+    <div style="text-align:center;margin-top:2rem;"><a href="{% url 'jobs' %}" class="btn-primary">Browse all jobs →</a></div>
+  </section>
+
+  <section>
+    <div class="section-tag">Platform Features</div>
+    <h2 class="section-title">Everything the <em>trade needs</em></h2>
+    <p class="section-sub">Purpose-built tools without the noise of a general-purpose job board.</p>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">→</div><div class="feature-title">One-Click Apply</div><p class="feature-desc">Technicians apply to any job instantly using their saved vault. No forms, no PDFs — just tap and apply.</p></div>
+      <div class="feature-card"><div class="feature-icon">✓</div><div class="feature-title">Verified Credentials</div><p class="feature-desc">ASE, I-CAR, OEM, and trade certifications are verified and displayed prominently on every profile.</p></div>
+      <div class="feature-card"><div class="feature-icon">⌖</div><div class="feature-title">City Pool Network</div><p class="feature-desc">Geo-targeted talent pools connect local shops with local technicians — no relocation guesswork.</p></div>
+      <div class="feature-card"><div class="feature-icon">✉</div><div class="feature-title">Direct Messaging</div><p class="feature-desc">Employers and technicians communicate directly through secure in-platform messaging.</p></div>
+      <div class="feature-card"><div class="feature-icon">★</div><div class="feature-title">Rating System</div><p class="feature-desc">Verified employer reviews build technician reputation over time, rewarding quality work and professionalism.</p></div>
+      <div class="feature-card"><div class="feature-icon">⌕</div><div class="feature-title">Smart Candidate Search</div><p class="feature-desc">Filter candidates by cert, specialty, years of experience, salary range, location, and live availability status.</p></div>
+      <div class="feature-card"><div class="feature-icon">☷</div><div class="feature-title">Job Post Management</div><p class="feature-desc">Employers manage open positions, track applications, and monitor posting performance from one dashboard.</p></div>
+      <div class="feature-card"><div class="feature-icon">●</div><div class="feature-title">Availability Signals</div><p class="feature-desc">Technicians set Active, Passive, or Not Looking status in real time.</p></div>
+      <div class="feature-card"><div class="feature-icon">$</div><div class="feature-title">Salary Transparency</div><p class="feature-desc">Technicians set salary targets. Employers post real pay ranges. No surprises at the offer stage.</p></div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="section-tag">Pricing</div>
+    <h2 class="section-title">Plans for <em>every shop</em></h2>
+    <p class="section-sub">Straightforward monthly plans for technicians, independent shops, growing teams, and multi-location groups.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card"><div class="pricing-plan">Technician Solo</div><div class="pricing-price"><sup>$</sup>9.95<sub>/mo</sub></div><div class="pricing-desc">Your complete automotive career profile</div><ul class="pricing-features"><li>Unlimited one-click applications</li><li>Full professional Vault</li><li>City Pool visibility</li><li>Direct employer messaging</li></ul><a class="btn-plan btn-plan-outline" href="{% url 'accounts:register_technician' %}">Build Your Vault</a></div>
+      <div class="pricing-card"><div class="pricing-plan">Employer Starter</div><div class="pricing-price"><sup>$</sup>99<sub>/mo</sub></div><div class="pricing-desc">For small shops hiring occasionally</div><ul class="pricing-features"><li>2 active job postings</li><li>100 candidate views/mo</li><li>One City Pool</li><li>Applicant messaging</li></ul><a class="btn-plan btn-plan-outline" href="{% url 'accounts:register_employer' %}">Get Started</a></div>
+      <div class="pricing-card featured"><div class="featured-badge">Most Popular</div><div class="pricing-plan">Employer Pro</div><div class="pricing-price"><sup>$</sup>249<sub>/mo</sub></div><div class="pricing-desc">For shops actively growing their team</div><ul class="pricing-features"><li>10 active job postings</li><li>Unlimited candidate views</li><li>Three City Pools</li><li>Advanced filtering</li></ul><a class="btn-plan btn-plan-fill" href="{% url 'accounts:register_employer' %}">Get Started</a></div>
+      <div class="pricing-card"><div class="pricing-plan">Enterprise</div><div class="pricing-price pricing-custom">Custom</div><div class="pricing-desc">For dealerships and multi-location groups</div><ul class="pricing-features"><li>Unlimited job postings</li><li>National City Pool access</li><li>Dedicated account manager</li><li>Custom ATS integration</li></ul><a class="btn-plan btn-plan-outline" href="mailto:support@ustowalliance.com?subject=WrenchLink Enterprise">Contact Sales</a></div>
+    </div>
+  </section>
+
+  <section class="cta-banner">
+    <div class="cta-inner"><h2>Ready to <em>wrench up</em> your career?</h2><p>Join the automotive talent network built for the trade.</p><div class="cta-actions"><a href="{% url 'accounts:register_technician' %}" class="btn-primary">Build Your Vault</a><a href="{% url 'accounts:register_employer' %}" class="btn-secondary">Start Hiring</a></div></div>
+  </section>
+</main>
+{% endblock %}

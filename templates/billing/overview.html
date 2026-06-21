@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Billing & Invoices — WrenchLink{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-head"><div class="section-tag">Account</div><h1>Billing &amp; <em>invoices</em></h1><p>Manage your subscription, payment method, plan, and invoice history.</p></div>
+  <div class="app-layout">
+    <aside class="app-rail"><div class="rail-title">Billing</div><div class="rail-group"><a class="sidebar-item active" href="#subscription">Subscription</a><a class="sidebar-item" href="#payment">Payment Method</a><a class="sidebar-item" href="#invoices">Invoices</a></div><div class="rail-title">Account</div><div class="rail-group"><a class="sidebar-item" href="{% url 'accounts:dashboard' %}">Back to Dashboard</a></div></aside>
+    <main>
+      <div class="panel" id="subscription">
+        {% if subscription %}
+          <div class="panel-head"><h2>Subscription</h2><span class="badge {% if subscription.status == 'active' %}green{% elif subscription.status == 'past_due' %}yellow{% else %}muted{% endif %}">{{ subscription.get_status_display }}</span></div>
+          <div class="dashboard-list-row"><div><strong>{{ subscription.plan|title }} plan</strong><span>{% if subscription.current_period_end %}Current period ends {{ subscription.current_period_end|date:"M j, Y" }}{% else %}Billing period pending Stripe confirmation{% endif %}</span></div>{% if subscription.cancel_at_period_end %}<span class="badge yellow">Cancels at period end</span>{% endif %}</div>
+          {% if subscription.stripe_customer_id %}<form method="post" action="{% url 'billing:portal' %}" style="margin-top:1rem;">{% csrf_token %}<button class="btn-sm">Change plan or cancel</button></form>{% endif %}
+        {% else %}
+          <div class="panel-head"><h2>Choose a subscription</h2><span class="badge muted">No active plan</span></div>
+          {% if stripe_enabled %}
+            <form method="post" action="{% url 'billing:checkout' %}">{% csrf_token %}{% if request.user.role == 'technician' %}<input type="hidden" name="plan" value="solo"><button class="btn-primary">Start Solo — $9.95/mo</button>{% else %}<button class="btn-primary" name="plan" value="starter">Starter — $99/mo</button> <button class="btn-secondary" name="plan" value="pro">Pro — $249/mo</button>{% endif %}</form>
+          {% else %}<p>Stripe is not configured in this environment. No simulated charges are created.</p>{% endif %}
+        {% endif %}
+      </div>
+      <div class="panel" id="payment">
+        <div class="panel-head"><h2>Payment method</h2>{% if subscription.stripe_customer_id %}<form method="post" action="{% url 'billing:portal' %}">{% csrf_token %}<button class="btn-sm ghost">Update</button></form>{% endif %}</div>
+        {% if subscription.stripe_customer_id %}<p style="color:var(--text-dim);">Payment details are stored securely by Stripe. WrenchLink does not store full card numbers.</p>{% else %}<div class="empty-state"><h3>No payment method</h3><p>A payment method will be added securely during Stripe checkout.</p></div>{% endif %}
+      </div>
+      <div class="panel" id="invoices">
+        <div class="panel-head"><h2>Invoice history</h2><span style="font-size:.82rem;color:var(--muted);">{{ invoices|length }} invoice{{ invoices|length|pluralize }}</span></div>
+        {% if invoices %}<table class="data-table"><thead><tr><th>Date</th><th>Invoice</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>{% for invoice in invoices %}<tr><td>{{ invoice.created_at|date:"M j, Y" }}</td><td>{{ invoice.stripe_invoice_id }}</td><td>{{ invoice.currency }} ${{ invoice.amount_due }}</td><td><span class="badge {% if invoice.status == 'paid' %}green{% else %}yellow{% endif %}">{{ invoice.status|title }}</span></td><td>{% if invoice.hosted_invoice_url %}<a class="link-accent" href="{{ invoice.hosted_invoice_url }}" rel="noopener">View</a>{% endif %}{% if invoice.invoice_pdf %} · <a class="link-accent" href="{{ invoice.invoice_pdf }}" rel="noopener">PDF</a>{% endif %}</td></tr>{% endfor %}</tbody></table>{% else %}<div class="empty-state"><h3>No invoices yet</h3><p>Your first invoice will appear at the start of your billing cycle.</p></div>{% endif %}
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}

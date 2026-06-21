@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Application — WrenchLink{% endblock %}
+{% block content %}
+<div class="page application-page">
+  <div class="application-heading">
+    <div><div class="section-tag">Hiring conversation</div><h1>{{ application.job.title }}</h1><p>{{ application.job.employer.company_name }} and {{ application.technician }}</p></div>
+    <span class="badge blue">{{ application.get_stage_display }}</span>
+  </div>
+  <div class="application-layout">
+    <main class="panel">
+      <div class="panel-head"><h2>Messages</h2></div>
+      <div class="message-thread">
+        {% for item in application.messages.all %}<article class="message {% if item.sender == request.user %}mine{% endif %}"><strong>{{ item.sender }}</strong><p>{{ item.body }}</p><time>{{ item.created_at|date:"M j, Y g:i A" }}</time></article>{% empty %}<div class="empty-compact">No messages yet.</div>{% endfor %}
+      </div>
+      <form method="post" action="{% url 'application_message' application.id %}" class="message-form">{% csrf_token %}{% include "marketplace/_form_fields.html" with form=message_form %}<button class="btn-sm" type="submit">Send message</button></form>
+    </main>
+    <aside>
+      <section class="panel">
+        <h2>Application status</h2>
+        {% if is_hiring %}
+          <form method="post" action="{% url 'update_application_stage' application.id %}">{% csrf_token %}<div class="form-group"><label class="form-label">Move to stage</label><select class="form-select" name="stage">{% for value,label in stage_choices %}{% if value == "reviewed" or value == "interview" or value == "offered" or value == "rejected" %}<option value="{{ value }}" {% if application.stage == value %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select></div><div class="form-group"><label class="form-label">Interview date and time</label><input class="form-input" type="datetime-local" name="interview_at" value="{{ application.interview_at|date:'Y-m-d\\TH:i' }}"></div><div class="form-group"><label class="form-label">Private employer notes</label><textarea class="form-input" name="employer_notes" maxlength="2000" rows="4">{{ application.employer_notes }}</textarea></div><div class="form-group"><label class="form-label">Offer details (shared with technician)</label><textarea class="form-input" name="offer_details" maxlength="1000" rows="4">{{ application.offer_details }}</textarea></div><button class="btn-sm" type="submit">Update stage</button></form>
+        {% elif is_owner and application.stage == "invited" or is_owner and application.stage == "offered" %}
+          {% if application.interview_at %}<p><strong>Interview:</strong> {{ application.interview_at|date:"M j, Y g:i A" }}</p>{% endif %}{% if application.invitation_message %}<p>{{ application.invitation_message }}</p>{% endif %}{% if application.offer_details %}<p>{{ application.offer_details }}</p>{% endif %}
+          <form method="post" action="{% url 'respond_application' application.id %}" class="inline-actions">{% csrf_token %}<button class="btn-sm" name="response" value="accept">Accept</button><button class="btn-sm ghost" name="response" value="decline">Decline</button></form>
+        {% elif is_owner and application.stage != "hired" and application.stage != "withdrawn" %}
+          <form method="post" action="{% url 'withdraw_application' application.id %}">{% csrf_token %}<button class="btn-sm ghost" type="submit">Withdraw application</button></form>
+        {% else %}<p class="panel-subtitle">No action is required right now.</p>{% endif %}
+      </section>
+      <section class="panel"><h2>Position</h2><p><a href="{{ application.job.get_absolute_url }}">{{ application.job.title }}</a></p><p class="panel-subtitle">{{ application.job.city_pool }} · {{ application.job.get_schedule_display }}</p></section>
+      {% if can_view_credentials %}
+        <section class="panel"><h2>Approved credentials</h2><div class="record-list">{% for cert in approved_certifications %}<div class="record-card"><div><strong>{{ cert.name }}</strong><span>Verified credential</span></div>{% if cert.file %}<a class="btn-sm ghost" href="{% url 'serve_certification' cert.id %}">Download</a>{% endif %}</div>{% endfor %}{% for document in approved_documents %}<div class="record-card"><div><strong>{{ document.name }}</strong><span>Verified private document</span></div><a class="btn-sm ghost" href="{% url 'serve_document' document.id %}">Download</a></div>{% empty %}{% if not approved_certifications %}<div class="empty-compact">No verified files are available.</div>{% endif %}{% endfor %}</div></section>
+      {% endif %}
+      {% if application.stage == "hired" and is_hiring %}
+        <section class="panel"><h2>Review technician</h2><form method="post" action="{% url 'review_technician' application.technician.id %}">{% csrf_token %}{% include "marketplace/_form_fields.html" with form=technician_review_form %}<button class="btn-sm" type="submit">Save review</button></form></section>
+      {% elif application.stage == "hired" and is_owner %}
+        <section class="panel"><h2>Review employer</h2><form method="post" action="{% url 'review_employer' application.job.employer.id %}">{% csrf_token %}{% include "marketplace/_form_fields.html" with form=employer_review_form %}<button class="btn-sm" type="submit">Save review</button></form></section>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

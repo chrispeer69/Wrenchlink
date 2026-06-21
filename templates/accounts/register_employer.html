@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Join as an Employer — WrenchLink{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-shell auth-shell-form auth-shell-wide">
+    <section class="auth-main">
+      {% include "accounts/_auth_tabs.html" %}
+      <div class="section-tag">Employer account</div>
+      <h1>Start hiring technicians</h1>
+      <p class="auth-intro">Create your shop profile and connect with talent in your City Pool.</p>
+      <form method="post" class="auth-form">
+        {% csrf_token %}{{ form.non_field_errors }}
+        <div class="auth-field-grid">
+          <div class="form-group"><label class="form-label">{{ form.first_name.label }}</label>{{ form.first_name }}{{ form.first_name.errors }}</div>
+          <div class="form-group"><label class="form-label">{{ form.last_name.label }}</label>{{ form.last_name }}{{ form.last_name.errors }}</div>
+        </div>
+        <div class="form-group"><label class="form-label">{{ form.email.label }}</label>{{ form.email }}{{ form.email.errors }}</div>
+        <div class="form-group"><label class="form-label">{{ form.company_name.label }}</label>{{ form.company_name }}{{ form.company_name.errors }}</div>
+        <div class="auth-field-grid">
+          <div class="form-group"><label class="form-label">{{ form.shop_type.label }}</label>{{ form.shop_type }}{{ form.shop_type.errors }}</div>
+          <div class="form-group"><label class="form-label">{{ form.city_pool.label }}</label>{{ form.city_pool }}{{ form.city_pool.errors }}</div>
+        </div>
+        <div class="auth-field-grid">
+          <div class="form-group"><label class="form-label">Password</label>{{ form.password1 }}{{ form.password1.errors }}</div>
+          <div class="form-group"><label class="form-label">Confirm password</label>{{ form.password2 }}{{ form.password2.errors }}</div>
+        </div>
+        <p class="auth-form-note">Use at least 8 characters and avoid common passwords.</p>
+        <button class="btn-submit auth-submit" type="submit">Create Employer Account →</button>
+      </form>
+      <p class="auth-bottom-link">Already registered? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+    </section>
+  </div>
+</div>
+{% endblock %}

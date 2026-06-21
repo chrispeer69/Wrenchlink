@@ -1,0 +1,5 @@
+<nav class="auth-tabs" aria-label="Account access">
+  <a href="{% url 'accounts:login' %}" class="auth-tab {% if request.resolver_match.url_name == 'login' %}active{% endif %}">Sign In</a>
+  <a href="{% url 'accounts:register_technician' %}" class="auth-tab {% if request.resolver_match.url_name == 'register_technician' %}active{% endif %}">Create Technician</a>
+  <a href="{% url 'accounts:register_employer' %}" class="auth-tab {% if request.resolver_match.url_name == 'register_employer' %}active{% endif %}">Create Employer</a>
+</nav>

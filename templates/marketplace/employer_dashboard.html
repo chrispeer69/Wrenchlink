@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Employer Dashboard — WrenchLink{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Employer workspace</div>
+    <h1>Shop <em>dashboard</em></h1>
+    <p>Publish jobs, search local technicians, manage applicants, and request controlled credential access.</p>
+  </div>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <a class="sidebar-item active" href="#overview">Overview</a>
+      <a class="sidebar-item" href="#jobs">Jobs</a>
+      <a class="sidebar-item" href="#applicants">Pipeline</a>
+      <a class="sidebar-item" href="#talent">Talent Search</a>
+      <a class="sidebar-item" href="#credentials">Credential Access</a>
+      <a class="sidebar-item" href="#updates">Updates</a>
+      <a class="sidebar-item" href="#notifications">Notification Settings</a>
+      <a class="sidebar-item" href="#profile">Business Profile</a>
+      <a class="sidebar-item" href="{% url 'billing:overview' %}">Billing</a>
+    </aside>
+
+    <main>
+      <div class="stat-row" id="overview">
+        <div class="dash-stat"><div class="num">{{ jobs|length }}</div><div class="lbl">Job postings</div></div>
+        <div class="dash-stat"><div class="num">{{ applications|length }}</div><div class="lbl">Applications</div></div>
+        <div class="dash-stat"><div class="num">{{ candidates|length }}</div><div class="lbl">Visible technicians</div></div>
+        <div class="dash-stat"><div class="num">{% if employer.is_verified %}✓{% else %}—{% endif %}</div><div class="lbl">Shop verification</div></div>
+      </div>
+
+      <section class="panel" id="jobs">
+        <div class="panel-head"><div><h2>Job postings</h2><p class="panel-subtitle">Draft, publish, pause, fill, edit, or remove listings.</p></div><a class="btn-sm" href="{% url 'employer_job_create' %}">Create job</a></div>
+        <div class="record-list">
+          {% for job in jobs %}
+            <article class="record-card job-manage-card">
+              <div><strong><a href="{% if job.status == 'active' %}{{ job.get_absolute_url }}{% else %}{% url 'employer_job_edit' job.id %}{% endif %}">{{ job.title }}</a></strong><span>{{ job.city_pool }} · {{ job.get_status_display }} · {{ job.applications.count }} applicant{{ job.applications.count|pluralize }}</span></div>
+              <div class="record-actions">
+                <a class="btn-sm ghost" href="{% url 'employer_job_edit' job.id %}">Edit</a>
+                <form method="post" action="{% url 'employer_job_status' job.id %}">{% csrf_token %}<select class="compact-select" name="status" onchange="this.form.submit()">{% for value,label in job.Status.choices %}<option value="{{ value }}" {% if job.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></form>
+                <form method="post" action="{% url 'employer_job_delete' job.id %}" onsubmit="return confirm('Delete this job and its applications?');">{% csrf_token %}<button class="text-danger" type="submit">Delete</button></form>
+              </div>
+            </article>
+          {% empty %}<div class="empty-compact">No jobs yet. Create a draft or publish your first listing.</div>{% endfor %}
+        </div>
+      </section>
+
+      <section class="panel" id="applicants">
+        <div class="panel-head"><div><h2>Applicant pipeline</h2><p class="panel-subtitle">Review candidates, message them, schedule the next step, and send offers.</p></div></div>
+        <div class="pipeline-grid">
+          {% for application in applications %}
+            <article class="pipeline-card">
+              <div class="pipeline-card-top"><span class="badge blue">{{ application.get_stage_display }}</span><span>{{ application.updated_at|date:"M j" }}</span></div>
+              <h3>{{ application.technician }}</h3>
+              <p>{{ application.technician.professional_title|default:"Automotive technician" }} · {{ application.technician.city_pool }}</p>
+              <strong>{{ application.job.title }}</strong>
+              <div class="record-actions"><a class="btn-sm" href="{% url 'application_detail' application.id %}">Open application</a></div>
+            </article>
+          {% empty %}<div class="empty-compact">Applications and accepted invitations will appear here.</div>{% endfor %}
+        </div>
+      </section>
+
+      <section class="panel" id="talent">
+        <div class="panel-head"><div><h2>Search technician talent</h2><p class="panel-subtitle">Search by technician name, title, profile keywords, City Pool, or availability.</p></div></div>
+        <form method="get" class="candidate-search">
+          <input class="form-input" name="candidate_q" value="{{ request.GET.candidate_q }}" maxlength="100" placeholder="Diagnostics, collision, EV, technician name">
+          <select class="form-select" name="candidate_city"><option value="">All City Pools</option>{% for pool in pools %}<option value="{{ pool.slug }}" {% if request.GET.candidate_city == pool.slug %}selected{% endif %}>{{ pool }}</option>{% endfor %}</select>
+          <select class="form-select" name="availability"><option value="">Any availability</option>{% for value,label in availability_choices %}<option value="{{ value }}" {% if request.GET.availability == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          <button class="btn-sm" type="submit">Search</button>
+        </form>
+        <div class="candidate-grid talent-results">
+          {% for candidate in candidates %}
+            <article class="candidate-card">
+              <div class="cand-avatar">{{ candidate.user.first_name|first }}{{ candidate.user.last_name|first }}</div>
+              <div class="cand-info"><h3><a href="{% url 'technician_profile_detail' candidate.id %}">{{ candidate }}</a></h3><p>{{ candidate.professional_title|default:"Automotive technician" }} · {{ candidate.years_experience }} years · {{ candidate.city_pool|default:"Location open" }}</p><div class="job-tags">{% for skill in candidate.skills|slice:":5" %}<span>{{ skill }}</span>{% endfor %}</div></div>
+              <div class="candidate-controls">
+                <span class="badge green">{{ candidate.get_availability_display }}</span>
+                <form method="post" action="{% url 'request_credentials' candidate.id %}" class="compact-form">{% csrf_token %}<input type="hidden" name="credential_type" value="all"><button class="btn-sm ghost" type="submit">Request credentials</button></form>
+                {% if jobs %}<form method="post" action="{% url 'invite_candidate' candidate.id %}" class="compact-form">{% csrf_token %}<select class="compact-select" name="job_id" required><option value="">Invite to job</option>{% for job in jobs %}{% if job.status == 'active' %}<option value="{{ job.id }}">{{ job.title }}</option>{% endif %}{% endfor %}</select><button class="btn-sm" type="submit">Invite</button></form>{% endif %}
+              </div>
+            </article>
+          {% empty %}<div class="empty-compact">No visible technicians match these filters.</div>{% endfor %}
+        </div>
+      </section>
+
+      <section class="panel" id="credentials">
+        <div class="panel-head"><div><h2>Credential access</h2><p class="panel-subtitle">Technicians control approval. Approved access enables private downloads.</p></div></div>
+        <div class="record-list">
+          {% for access in access_requests %}
+            <article class="record-card"><div><strong>{{ access.technician }}</strong><span>{{ access.credential_type }} · Requested {{ access.created_at|date:"M j, Y" }}</span></div><div class="record-actions"><span class="badge {% if access.status == 'approved' %}green{% elif access.status == 'pending' %}yellow{% else %}muted{% endif %}">{{ access.get_status_display }}</span>{% if access.status == 'approved' %}<span class="panel-subtitle">Open the candidate’s credential links from their application.</span>{% endif %}</div></article>
+          {% empty %}<div class="empty-compact">No credential requests yet.</div>{% endfor %}
+        </div>
+      </section>
+
+      <section class="panel" id="profile">
+        <div class="panel-head"><div><h2>Business profile</h2><p class="panel-subtitle">This information appears on jobs and helps technicians evaluate your shop.</p></div></div>
+        <form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="profile">{% include "marketplace/_form_fields.html" with form=form %}<div class="form-actions"><button class="btn-sm" type="submit">Save business profile</button></div></form>
+      </section>
+
+      <section class="panel" id="updates">
+        <div class="panel-head"><div><h2>System updates</h2><p class="panel-subtitle">Applications, candidate replies, messages, and credential decisions appear here.</p></div><form method="post" action="{% url 'mark_notifications_read' %}">{% csrf_token %}<input type="hidden" name="next" value="/employer/#updates"><button class="btn-sm ghost" type="submit">Mark all read</button></form></div>
+        {% include "marketplace/_dashboard_notifications.html" %}
+      </section>
+
+      <section class="panel" id="notifications">
+        <div class="panel-head"><div><h2>Notification settings</h2><p class="panel-subtitle">Choose which events appear inside WrenchLink and which are also sent by email.</p></div></div>
+        {% include "marketplace/_notification_settings.html" %}
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}

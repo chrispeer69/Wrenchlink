@@ -1,0 +1,22 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+# Local databases and database exports
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+*.dump
+*.bak
+*.backup
+
+# User-uploaded files and generated static output
+media/
+staticfiles/
+.DS_Store
+.venv/
+venv/
+.pytest_cache/
+.coverage

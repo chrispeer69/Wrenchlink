@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}My Vault — WrenchLink{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-head">
+    <div class="section-tag">Technician workspace</div>
+    <h1>My <em>vault</em></h1>
+    <p>Keep your professional profile complete, control access to private documents, and manage every application.</p>
+  </div>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar vault-nav">
+      <a class="sidebar-item active" href="#overview">Overview</a>
+      <a class="sidebar-item" href="#profile">Profile</a>
+      <a class="sidebar-item" href="#certification">Certifications</a>
+      <a class="sidebar-item" href="#work">Work History</a>
+      <a class="sidebar-item" href="#education">Education</a>
+      <a class="sidebar-item" href="#reference">References</a>
+      <a class="sidebar-item" href="#document">Documents</a>
+      <a class="sidebar-item" href="#applications">Applications</a>
+      <a class="sidebar-item" href="#access">Access Requests</a>
+      <a class="sidebar-item" href="#updates">Updates</a>
+      <a class="sidebar-item" href="#notifications">Notification Settings</a>
+    </aside>
+
+    <main>
+      <section class="panel vault-summary" id="overview">
+        <div class="profile-header">
+          <div class="avatar-circle">{{ request.user.first_name|first }}{{ request.user.last_name|first }}</div>
+          <div class="profile-name">
+            <h2>{{ request.user.get_full_name|default:request.user.username }}</h2>
+            <p>{{ profile.professional_title|default:"Add your professional title" }} · {{ profile.city_pool|default:"Choose a City Pool" }}</p>
+          </div>
+          <span class="badge green">{{ profile.get_availability_display }}</span>
+        </div>
+        <div class="vault-metrics">
+          <div><strong>{{ profile.certifications.count }}</strong><span>Credentials</span></div>
+          <div><strong>{{ profile.work_history.count }}</strong><span>Work entries</span></div>
+          <div><strong>{{ profile.documents.count }}</strong><span>Private files</span></div>
+          <div><strong>{{ applications|length }}</strong><span>Applications</span></div>
+        </div>
+      </section>
+
+      <section class="panel" id="profile">
+        <div class="panel-head"><div><h2>Professional profile</h2><p class="panel-subtitle">Visible to employers when your profile is enabled.</p></div></div>
+        <form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="profile">{% include "marketplace/_form_fields.html" with form=profile_form %}<div class="form-actions"><button class="btn-sm" type="submit">Save profile</button></div></form>
+      </section>
+
+      <section class="panel" id="certification">
+        <div class="panel-head"><div><h2>Certifications and credentials</h2><p class="panel-subtitle">Add ASE, I-CAR, OEM, EV, ADAS, paint, or trade credentials.</p></div></div>
+        <div class="record-list">
+          {% for cert in profile.certifications.all %}
+            <article class="record-card">
+              <div><strong>{{ cert.name }}</strong><span>{{ cert.issuing_organization|default:"Issuer not specified" }}{% if cert.expiry_date %} · Expires {{ cert.expiry_date|date:"M Y" }}{% endif %}</span></div>
+              <div class="record-actions">{% if cert.file %}<a class="btn-sm ghost" href="{% url 'serve_certification' cert.id %}">Download</a>{% endif %}<span class="badge {% if cert.status == 'verified' %}green{% else %}yellow{% endif %}">{{ cert.get_status_display }}</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_certification"><input type="hidden" name="record_id" value="{{ cert.id }}"><button class="text-danger" type="submit">Remove</button></form></div>
+            </article>
+          {% empty %}<div class="empty-compact">No certifications added.</div>{% endfor %}
+        </div>
+        <details class="add-record" {% if certification_form.errors %}open{% endif %}><summary>Add certification</summary><form method="post" enctype="multipart/form-data" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="certification">{% include "marketplace/_form_fields.html" with form=certification_form %}<div class="upload-note">Optional evidence file. PDF, DOC, DOCX, JPG, or PNG; 10 MB maximum. Files stay private.</div><div class="form-actions"><button class="btn-sm" type="submit">Add certification</button></div></form></details>
+      </section>
+
+      <section class="panel" id="work">
+        <div class="panel-head"><div><h2>Work history</h2><p class="panel-subtitle">Show relevant roles and practical automotive experience.</p></div></div>
+        <div class="record-list">{% for item in profile.work_history.all %}<article class="record-card"><div><strong>{{ item.role }} at {{ item.company }}</strong><span>{{ item.start_date|date:"M Y" }} to {{ item.end_date|date:"M Y"|default:"Present" }}{% if item.location %} · {{ item.location }}{% endif %}</span>{% if item.description %}<p>{{ item.description }}</p>{% endif %}</div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_work"><input type="hidden" name="record_id" value="{{ item.id }}"><button class="text-danger" type="submit">Remove</button></form></article>{% empty %}<div class="empty-compact">No work history added.</div>{% endfor %}</div>
+        <details class="add-record" {% if work_form.errors %}open{% endif %}><summary>Add work history</summary><form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="work">{% include "marketplace/_form_fields.html" with form=work_form %}<div class="form-actions"><button class="btn-sm" type="submit">Add work entry</button></div></form></details>
+      </section>
+
+      <section class="panel" id="education">
+        <div class="panel-head"><div><h2>Education and training</h2><p class="panel-subtitle">Trade school, manufacturer training, apprenticeships, and degree programs.</p></div></div>
+        <div class="record-list">{% for item in profile.education.all %}<article class="record-card"><div><strong>{{ item.program }}</strong><span>{{ item.school }}{% if item.completion_year %} · {{ item.completion_year }}{% endif %}</span></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_education"><input type="hidden" name="record_id" value="{{ item.id }}"><button class="text-danger" type="submit">Remove</button></form></article>{% empty %}<div class="empty-compact">No education or training added.</div>{% endfor %}</div>
+        <details class="add-record" {% if education_form.errors %}open{% endif %}><summary>Add education or training</summary><form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="education">{% include "marketplace/_form_fields.html" with form=education_form %}<div class="form-actions"><button class="btn-sm" type="submit">Add education</button></div></form></details>
+      </section>
+
+      <section class="panel" id="reference">
+        <div class="panel-head"><div><h2>Professional references</h2><p class="panel-subtitle">Reference contact details remain inside your authenticated vault.</p></div></div>
+        <div class="record-list">{% for ref in profile.references.all %}<article class="record-card"><div><strong>{{ ref.name }}</strong><span>{{ ref.relationship }} · {{ ref.email|default:ref.phone }}</span></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_reference"><input type="hidden" name="record_id" value="{{ ref.id }}"><button class="text-danger" type="submit">Remove</button></form></article>{% empty %}<div class="empty-compact">No references added.</div>{% endfor %}</div>
+        <details class="add-record" {% if reference_form.errors %}open{% endif %}><summary>Add professional reference</summary><form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="reference">{% include "marketplace/_form_fields.html" with form=reference_form %}<div class="form-actions"><button class="btn-sm" type="submit">Add reference</button></div></form></details>
+      </section>
+
+      <section class="panel" id="document">
+        <div class="panel-head"><div><h2>Private documents</h2><p class="panel-subtitle">Only you, staff, and employers you explicitly approve can download these files.</p></div></div>
+        <div class="record-list">{% for document in profile.documents.all %}<article class="record-card"><div><strong>{{ document.name }}</strong><span>{{ document.uploaded_at|date:"M j, Y" }} · {{ document.file_size|filesizeformat }}</span></div><div class="record-actions"><a class="btn-sm ghost" href="{% url 'serve_document' document.id %}">Download</a><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_document"><input type="hidden" name="record_id" value="{{ document.id }}"><button class="text-danger" type="submit">Remove</button></form></div></article>{% empty %}<div class="empty-compact">No documents uploaded.</div>{% endfor %}</div>
+        <details class="add-record" {% if document_form.errors %}open{% endif %}><summary>Upload document</summary><form method="post" enctype="multipart/form-data" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="document">{% include "marketplace/_form_fields.html" with form=document_form %}<div class="upload-note">PDF, DOC, DOCX, JPG, or PNG only. Maximum 10 MB. Executable and mismatched files are rejected.</div><div class="form-actions"><button class="btn-sm" type="submit">Upload securely</button></div></form></details>
+      </section>
+
+      <section class="panel" id="access">
+        <div class="panel-head"><div><h2>Credential access requests</h2><p class="panel-subtitle">Approval grants that employer access to your private credential and document downloads.</p></div></div>
+        <div class="record-list">{% for access in access_requests %}<article class="record-card"><div><strong>{{ access.employer.company_name }}</strong><span>Requested: {{ access.credential_type }} · {{ access.created_at|date:"M j, Y" }}</span></div><div class="record-actions"><span class="badge {% if access.status == 'approved' %}green{% elif access.status == 'pending' %}yellow{% else %}muted{% endif %}">{{ access.get_status_display }}</span><form method="post" class="inline-actions">{% csrf_token %}<input type="hidden" name="action" value="credential_response"><input type="hidden" name="request_id" value="{{ access.id }}">{% if access.status != 'approved' %}<button class="btn-sm" name="decision" value="approved" type="submit">Approve</button>{% endif %}{% if access.status != 'rejected' %}<button class="btn-sm ghost" name="decision" value="rejected" type="submit">{% if access.status == 'approved' %}Revoke{% else %}Reject{% endif %}</button>{% endif %}</form></div></article>{% empty %}<div class="empty-compact">No access requests.</div>{% endfor %}</div>
+      </section>
+
+      <section class="panel" id="applications">
+        <div class="panel-head"><div><h2>Applications and invitations</h2><p class="panel-subtitle">Open an application to message the employer or respond to an invitation or offer.</p></div></div>
+        <div class="record-list">{% for application in applications %}<article class="record-card"><div><strong>{{ application.job.title }}</strong><span>{{ application.job.employer.company_name }} · {{ application.updated_at|date:"M j, Y" }}</span></div><div class="record-actions"><span class="badge blue">{{ application.get_stage_display }}</span><a class="btn-sm ghost" href="{% url 'application_detail' application.id %}">Open</a></div></article>{% empty %}<div class="empty-compact">No applications yet.</div>{% endfor %}</div>
+      </section>
+
+      <section class="panel" id="saved">
+        <div class="panel-head"><h2>Saved jobs</h2></div>
+        <div class="record-list">{% for saved in saved_jobs %}<article class="record-card"><div><strong>{{ saved.job.title }}</strong><span>{{ saved.job.employer.company_name }} · {{ saved.job.city_pool }}</span></div><a class="btn-sm ghost" href="{{ saved.job.get_absolute_url }}">View</a></article>{% empty %}<div class="empty-compact">No saved jobs.</div>{% endfor %}</div>
+      </section>
+
+      <section class="panel" id="updates">
+        <div class="panel-head"><div><h2>System updates</h2><p class="panel-subtitle">Messages, application changes, invitations, offers, and credential requests appear here.</p></div><form method="post" action="{% url 'mark_notifications_read' %}">{% csrf_token %}<input type="hidden" name="next" value="/vault/#updates"><button class="btn-sm ghost" type="submit">Mark all read</button></form></div>
+        {% include "marketplace/_dashboard_notifications.html" %}
+      </section>
+
+      <section class="panel" id="notifications">
+        <div class="panel-head"><div><h2>Notification settings</h2><p class="panel-subtitle">Choose which events appear inside WrenchLink and which are also sent by email.</p></div></div>
+        {% include "marketplace/_notification_settings.html" %}
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
