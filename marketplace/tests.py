@@ -72,6 +72,7 @@ class MarketplaceTests(TestCase):
         self.assertEqual(CityPool.objects.count(), 1)
         self.assertEqual(Job.objects.count(), 1)
 
+    @override_settings(SECURE_SSL_REDIRECT=True)
     def test_railway_healthcheck_works_with_railway_hostname(self):
         response = self.client.get(
             reverse("health"), HTTP_HOST="healthcheck.railway.app"
