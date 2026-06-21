@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q, Sum
-from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -131,6 +131,10 @@ def home(request):
         .select_related("employer", "city_pool")[:3]
     )
     return render(request, "marketplace/home.html", {"jobs": jobs})
+
+
+def health(request):
+    return HttpResponse("ok", content_type="text/plain")
 
 
 def job_list(request):

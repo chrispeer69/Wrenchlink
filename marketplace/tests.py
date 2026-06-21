@@ -72,6 +72,13 @@ class MarketplaceTests(TestCase):
         self.assertEqual(CityPool.objects.count(), 1)
         self.assertEqual(Job.objects.count(), 1)
 
+    def test_railway_healthcheck_works_with_railway_hostname(self):
+        response = self.client.get(
+            reverse("health"), HTTP_HOST="healthcheck.railway.app"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"ok")
+
     def test_application_requires_post(self):
         self.client.force_login(self.tech_user)
         url = reverse("apply_job", args=[self.job.pk])
