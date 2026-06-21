@@ -86,6 +86,20 @@ class MarketplaceTests(TestCase):
         self.assertEqual(self.pool.technician_count, 1)
         self.assertEqual(self.pool.open_job_count, 1)
 
+    def test_legacy_html_urls_redirect_to_clean_django_routes(self):
+        redirects = {
+            "/index.html": "/",
+            "/home.html": "/",
+            "/jobs.html": "/jobs/",
+            "/city-pools.html": "/city-pools/",
+            "/legal.html": "/legal/",
+        }
+        for legacy_url, clean_url in redirects.items():
+            with self.subTest(legacy_url=legacy_url):
+                response = self.client.get(legacy_url)
+                self.assertEqual(response.status_code, 301)
+                self.assertEqual(response["Location"], clean_url)
+
     def test_technician_can_add_education_from_vault(self):
         self.client.force_login(self.tech_user)
         response = self.client.post(
