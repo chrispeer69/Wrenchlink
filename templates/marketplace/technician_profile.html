@@ -15,9 +15,23 @@
       <section class="panel"><h2>Employer reviews</h2><div class="record-list">{% for review in profile.reviews.all %}<div class="record-card"><div><strong>{{ review.average }} / 5 · {{ review.employer.company_name }}</strong><span>{{ review.comment|default:"Rating only" }}</span></div></div>{% empty %}<div class="empty-compact">No reviews yet.</div>{% endfor %}</div></section>
     </main>
     <aside>
+      {% if employer %}
+        <section class="panel candidate-pipeline-panel">
+          <div class="panel-head"><div><h2>Hiring pipeline</h2><p class="panel-subtitle">Your shop’s current activity with this technician.</p></div></div>
+          <div class="record-list">
+            {% for application in employer_applications %}
+              <article class="record-card">
+                <div><strong>{{ application.job.title }}</strong><span>{{ application.get_stage_display }} · Updated {{ application.updated_at|date:"M j" }}</span></div>
+                <a class="btn-sm ghost" href="{% url 'application_detail' application.id %}">Open</a>
+              </article>
+            {% empty %}<div class="empty-compact">This technician is not in your pipeline yet.</div>{% endfor %}
+          </div>
+          <a class="pipeline-back-link" href="{% url 'employer_dashboard' %}#pipeline">← Back to hiring board</a>
+        </section>
+      {% endif %}
       <section class="panel"><h2>Credentials</h2><div class="record-list">{% for cert in profile.certifications.all %}<div class="record-card"><div><strong>{{ cert.name }}</strong><span>{{ cert.issuing_organization }} · {{ cert.get_status_display }}</span></div>{% if can_view_credentials and cert.file and cert.status == 'verified' %}<a class="btn-sm ghost" href="{% url 'serve_certification' cert.id %}">Download</a>{% endif %}</div>{% empty %}<div class="empty-compact">No credentials listed.</div>{% endfor %}</div></section>
       {% if employer %}
-        <section class="panel"><h2>Employer actions</h2><form method="post" action="{% url 'request_credentials' profile.id %}">{% csrf_token %}<input type="hidden" name="credential_type" value="all"><button class="btn-sm ghost full-button" type="submit">Request credential access</button></form>{% if active_jobs %}<form method="post" action="{% url 'invite_candidate' profile.id %}" class="profile-invite-form">{% csrf_token %}<select class="form-select" name="job_id" required><option value="">Choose active job</option>{% for job in active_jobs %}<option value="{{ job.id }}">{{ job.title }}</option>{% endfor %}</select><textarea class="form-input" name="message" maxlength="600" rows="3" placeholder="Optional invitation note"></textarea><button class="btn-sm full-button" type="submit">Send invitation</button></form>{% endif %}</section>
+        <section class="panel"><h2>Employer actions</h2><form method="post" action="{% url 'request_credentials' profile.id %}">{% csrf_token %}<input type="hidden" name="credential_type" value="all"><button class="btn-sm ghost full-button" type="submit">Request credential access</button></form>{% if active_jobs %}<form method="post" action="{% url 'invite_candidate' profile.id %}" class="profile-invite-form">{% csrf_token %}<select class="form-select" name="job_id" required><option value="">Choose active job</option>{% for job in active_jobs %}{% if job.id not in candidate_job_ids %}<option value="{{ job.id }}">{{ job.title }}</option>{% endif %}{% endfor %}</select><textarea class="form-input" name="message" maxlength="600" rows="3" placeholder="Optional invitation note"></textarea><button class="btn-sm full-button" type="submit">Add to pipeline</button></form>{% endif %}</section>
       {% endif %}
     </aside>
   </div>

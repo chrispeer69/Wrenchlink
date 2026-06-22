@@ -9,27 +9,34 @@
   </div>
 
   <div class="dashboard-layout">
-    <aside class="sidebar">
-      <a class="sidebar-item active" href="#overview">Overview</a>
-      <a class="sidebar-item" href="#jobs">Jobs</a>
-      <a class="sidebar-item" href="#applicants">Pipeline</a>
-      <a class="sidebar-item" href="#talent">Talent Search</a>
-      <a class="sidebar-item" href="#credentials">Credential Access</a>
-      <a class="sidebar-item" href="#updates">Updates</a>
-      <a class="sidebar-item" href="#notifications">Notification Settings</a>
-      <a class="sidebar-item" href="#profile">Business Profile</a>
+    <aside class="sidebar dashboard-tabs" aria-label="Employer dashboard">
+      <a class="sidebar-item active" href="#overview" data-dashboard-tab="overview">Overview</a>
+      <a class="sidebar-item" href="#jobs" data-dashboard-tab="jobs">Jobs</a>
+      <a class="sidebar-item" href="#pipeline" data-dashboard-tab="pipeline">Pipeline</a>
+      <a class="sidebar-item" href="#talent" data-dashboard-tab="talent">Talent Search</a>
+      <a class="sidebar-item" href="#credentials" data-dashboard-tab="credentials">Credential Access</a>
+      <a class="sidebar-item" href="#updates" data-dashboard-tab="updates">Updates</a>
+      <a class="sidebar-item" href="#notifications" data-dashboard-tab="notifications">Notification Settings</a>
+      <a class="sidebar-item" href="#profile" data-dashboard-tab="profile">Business Profile</a>
       <a class="sidebar-item" href="{% url 'billing:overview' %}">Billing</a>
     </aside>
 
-    <main>
-      <div class="stat-row" id="overview">
-        <div class="dash-stat"><div class="num">{{ jobs|length }}</div><div class="lbl">Job postings</div></div>
-        <div class="dash-stat"><div class="num">{{ applications|length }}</div><div class="lbl">Applications</div></div>
-        <div class="dash-stat"><div class="num">{{ candidates|length }}</div><div class="lbl">Visible technicians</div></div>
-        <div class="dash-stat"><div class="num">{% if employer.is_verified %}✓{% else %}—{% endif %}</div><div class="lbl">Shop verification</div></div>
-      </div>
+    <main class="dashboard-tab-content">
+      <section class="dashboard-tab-panel active" id="overview" data-dashboard-panel="overview">
+        <div class="stat-row">
+          <div class="dash-stat"><div class="num">{{ jobs|length }}</div><div class="lbl">Job postings</div></div>
+          <div class="dash-stat"><div class="num">{{ applications|length }}</div><div class="lbl">Applications</div></div>
+          <div class="dash-stat"><div class="num">{{ candidates|length }}</div><div class="lbl">Visible technicians</div></div>
+          <div class="dash-stat"><div class="num">{% if employer.is_verified %}✓{% else %}—{% endif %}</div><div class="lbl">Shop verification</div></div>
+        </div>
+        <div class="dashboard-overview-grid">
+          <article class="panel overview-action-card"><span class="overview-kicker">Hiring</span><h2>Move candidates forward</h2><p>{{ applications|length }} candidate record{{ applications|length|pluralize }} across your active pipeline.</p><a class="btn-sm" href="#pipeline" data-dashboard-tab-link="pipeline">Open pipeline</a></article>
+          <article class="panel overview-action-card"><span class="overview-kicker">Jobs</span><h2>Keep listings current</h2><p>Publish, pause, fill, and edit all shop openings from one view.</p><a class="btn-sm ghost" href="#jobs" data-dashboard-tab-link="jobs">Manage jobs</a></article>
+          <article class="panel overview-action-card"><span class="overview-kicker">Talent</span><h2>Search your market</h2><p>Review visible technicians and invite qualified people directly.</p><a class="btn-sm ghost" href="#talent" data-dashboard-tab-link="talent">Find technicians</a></article>
+        </div>
+      </section>
 
-      <section class="panel" id="jobs">
+      <section class="panel dashboard-tab-panel" id="jobs" data-dashboard-panel="jobs">
         <div class="panel-head"><div><h2>Job postings</h2><p class="panel-subtitle">Draft, publish, pause, fill, edit, or remove listings.</p></div><a class="btn-sm" href="{% url 'employer_job_create' %}">Create job</a></div>
         <div class="record-list">
           {% for job in jobs %}
@@ -45,24 +52,31 @@
         </div>
       </section>
 
-      <section class="panel" id="applicants">
+      <section class="panel dashboard-tab-panel" id="pipeline" data-dashboard-panel="pipeline">
         <div class="panel-head"><div><h2>Applicant pipeline</h2><p class="panel-subtitle">Review candidates, message them, schedule the next step, and send offers.</p></div></div>
-        <div class="pipeline-grid">
-          {% for application in applications %}
-            <article class="pipeline-card">
-              <div class="pipeline-card-top"><span class="badge blue">{{ application.get_stage_display }}</span><span>{{ application.updated_at|date:"M j" }}</span></div>
-              <h3>{{ application.technician }}</h3>
-              <p>{{ application.technician.professional_title|default:"Automotive technician" }} · {{ application.technician.city_pool }}</p>
-              <strong>{{ application.job.title }}</strong>
-              <div class="record-actions"><a class="btn-sm" href="{% url 'application_detail' application.id %}">Open application</a></div>
-            </article>
-          {% empty %}<div class="empty-compact">Applications and accepted invitations will appear here.</div>{% endfor %}
+        <div class="pipeline-board">
+          {% for column in pipeline_columns %}
+            <section class="pipeline-column pipeline-column-{{ column.key }}">
+              <header><h3>{{ column.label }}</h3><span>{{ column.applications|length }}</span></header>
+              <div class="pipeline-column-list">
+                {% for application in column.applications %}
+                  <article class="pipeline-card">
+                    <div class="pipeline-card-top"><span class="badge blue">{{ application.get_stage_display }}</span><span>{{ application.updated_at|date:"M j" }}</span></div>
+                    <h3><a href="{% url 'technician_profile_detail' application.technician.id %}">{{ application.technician }}</a></h3>
+                    <p>{{ application.technician.professional_title|default:"Automotive technician" }} · {{ application.technician.city_pool }}</p>
+                    <strong>{{ application.job.title }}</strong>
+                    <a class="pipeline-open" href="{% url 'application_detail' application.id %}">Open application →</a>
+                  </article>
+                {% empty %}<div class="pipeline-empty">No candidates</div>{% endfor %}
+              </div>
+            </section>
+          {% endfor %}
         </div>
       </section>
 
-      <section class="panel" id="talent">
+      <section class="panel dashboard-tab-panel" id="talent" data-dashboard-panel="talent">
         <div class="panel-head"><div><h2>Search technician talent</h2><p class="panel-subtitle">Search by technician name, title, profile keywords, City Pool, or availability.</p></div></div>
-        <form method="get" class="candidate-search">
+        <form method="get" action="{% url 'employer_dashboard' %}#talent" class="candidate-search">
           <input class="form-input" name="candidate_q" value="{{ request.GET.candidate_q }}" maxlength="100" placeholder="Diagnostics, collision, EV, technician name">
           <select class="form-select" name="candidate_city"><option value="">All City Pools</option>{% for pool in pools %}<option value="{{ pool.slug }}" {% if request.GET.candidate_city == pool.slug %}selected{% endif %}>{{ pool }}</option>{% endfor %}</select>
           <select class="form-select" name="availability"><option value="">Any availability</option>{% for value,label in availability_choices %}<option value="{{ value }}" {% if request.GET.availability == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
@@ -83,7 +97,7 @@
         </div>
       </section>
 
-      <section class="panel" id="credentials">
+      <section class="panel dashboard-tab-panel" id="credentials" data-dashboard-panel="credentials">
         <div class="panel-head"><div><h2>Credential access</h2><p class="panel-subtitle">Technicians control approval. Approved access enables private downloads.</p></div></div>
         <div class="record-list">
           {% for access in access_requests %}
@@ -92,21 +106,58 @@
         </div>
       </section>
 
-      <section class="panel" id="profile">
+      <section class="panel dashboard-tab-panel" id="profile" data-dashboard-panel="profile">
         <div class="panel-head"><div><h2>Business profile</h2><p class="panel-subtitle">This information appears on jobs and helps technicians evaluate your shop.</p></div></div>
         <form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="profile">{% include "marketplace/_form_fields.html" with form=form %}<div class="form-actions"><button class="btn-sm" type="submit">Save business profile</button></div></form>
       </section>
 
-      <section class="panel" id="updates">
+      <section class="panel dashboard-tab-panel" id="updates" data-dashboard-panel="updates">
         <div class="panel-head"><div><h2>System updates</h2><p class="panel-subtitle">Applications, candidate replies, messages, and credential decisions appear here.</p></div><form method="post" action="{% url 'mark_notifications_read' %}">{% csrf_token %}<input type="hidden" name="next" value="/employer/#updates"><button class="btn-sm ghost" type="submit">Mark all read</button></form></div>
         {% include "marketplace/_dashboard_notifications.html" %}
       </section>
 
-      <section class="panel" id="notifications">
+      <section class="panel dashboard-tab-panel" id="notifications" data-dashboard-panel="notifications">
         <div class="panel-head"><div><h2>Notification settings</h2><p class="panel-subtitle">Choose which events appear inside WrenchLink and which are also sent by email.</p></div></div>
         {% include "marketplace/_notification_settings.html" %}
       </section>
     </main>
   </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll('[data-dashboard-tab]')];
+  const panels = [...document.querySelectorAll('[data-dashboard-panel]')];
+  const validTabs = new Set(panels.map(panel => panel.dataset.dashboardPanel));
+
+  function showTab(name, updateHash = true) {
+    const selected = validTabs.has(name) ? name : 'overview';
+    tabs.forEach(tab => {
+      const active = tab.dataset.dashboardTab === selected;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+    panels.forEach(panel => {
+      const active = panel.dataset.dashboardPanel === selected;
+      panel.classList.toggle('active', active);
+      panel.hidden = !active;
+    });
+    if (updateHash) history.replaceState(null, '', `#${selected}`);
+  }
+
+  tabs.forEach(tab => tab.addEventListener('click', event => {
+    event.preventDefault();
+    showTab(tab.dataset.dashboardTab);
+  }));
+  document.querySelectorAll('[data-dashboard-tab-link]').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      showTab(link.dataset.dashboardTabLink);
+    });
+  });
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1), false));
+  showTab(location.hash.slice(1), false);
+})();
+</script>
 {% endblock %}

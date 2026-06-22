@@ -162,6 +162,49 @@ class MarketplaceTests(TestCase):
         self.job.refresh_from_db()
         self.assertEqual(self.job.status, Job.Status.PAUSED)
 
+    def test_employer_dashboard_renders_tabbed_pipeline_board(self):
+        Application.objects.create(technician=self.tech, job=self.job)
+        self.client.force_login(self.employer_user)
+        response = self.client.get(reverse("employer_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-dashboard-panel="pipeline"')
+        self.assertContains(response, "pipeline-board")
+        self.assertContains(response, self.tech.user.get_full_name())
+
+    def test_hirer_profile_shows_candidate_pipeline_context(self):
+        application = Application.objects.create(
+            technician=self.tech,
+            job=self.job,
+            stage=Application.Stage.INTERVIEW,
+        )
+        self.client.force_login(self.employer_user)
+        response = self.client.get(
+            reverse("technician_profile_detail", args=[self.tech.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Hiring pipeline")
+        self.assertContains(response, application.get_stage_display())
+        self.assertContains(response, reverse("application_detail", args=[application.id]))
+
+    def test_application_workspace_includes_candidate_profile_snapshot(self):
+        self.tech.professional_title = "Master Diagnostic Technician"
+        self.tech.years_experience = 8
+        self.tech.skills = ["Diagnostics", "ADAS"]
+        self.tech.save()
+        application = Application.objects.create(technician=self.tech, job=self.job)
+        self.client.force_login(self.employer_user)
+        response = self.client.get(
+            reverse("application_detail", args=[application.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Candidate profile")
+        self.assertContains(response, "Master Diagnostic Technician")
+        self.assertContains(response, "Diagnostics")
+        self.assertContains(
+            response,
+            reverse("technician_profile_detail", args=[self.tech.id]),
+        )
+
     def test_invite_offer_and_accept_workflow(self):
         self.client.force_login(self.employer_user)
         response = self.client.post(

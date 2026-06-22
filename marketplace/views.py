@@ -233,6 +233,15 @@ def technician_profile_detail(request, technician_id):
         employer and _may_view_private_files(request.user, technician)
     )
     active_jobs = employer.jobs.filter(status=Job.Status.ACTIVE) if employer else []
+    employer_applications = (
+        Application.objects.filter(
+            technician=technician,
+            job__employer=employer,
+        ).select_related("job")
+        if employer
+        else []
+    )
+    employer_application_list = list(employer_applications)
     return render(
         request,
         "marketplace/technician_profile.html",
@@ -242,6 +251,10 @@ def technician_profile_detail(request, technician_id):
             "employer": employer,
             "can_view_credentials": can_view_credentials,
             "active_jobs": active_jobs,
+            "employer_applications": employer_application_list,
+            "candidate_job_ids": {
+                application.job_id for application in employer_application_list
+            },
         },
     )
 
@@ -371,7 +384,7 @@ def technician_vault(request):
                 Notification.Event.CREDENTIAL,
                 "Credential request updated",
                 f"{profile} {decision} your credential access request.",
-                "/employer/#applicants",
+                "/employer/#pipeline",
             )
             messages.success(request, f"Request {decision}.")
             return redirect("technician_vault")
@@ -420,6 +433,63 @@ def employer_dashboard(request):
     applications = Application.objects.filter(job__employer=employer).select_related(
         "technician__user", "technician__city_pool", "job"
     )
+    application_list = list(applications)
+    pipeline_columns = [
+        {
+            "key": "new",
+            "label": "New",
+            "applications": [
+                item
+                for item in application_list
+                if item.stage
+                in {
+                    Application.Stage.APPLIED,
+                    Application.Stage.INVITED,
+                    Application.Stage.REVIEWED,
+                }
+            ],
+        },
+        {
+            "key": "interview",
+            "label": "Interview",
+            "applications": [
+                item
+                for item in application_list
+                if item.stage == Application.Stage.INTERVIEW
+            ],
+        },
+        {
+            "key": "offer",
+            "label": "Offer",
+            "applications": [
+                item
+                for item in application_list
+                if item.stage == Application.Stage.OFFERED
+            ],
+        },
+        {
+            "key": "hired",
+            "label": "Hired",
+            "applications": [
+                item
+                for item in application_list
+                if item.stage == Application.Stage.HIRED
+            ],
+        },
+        {
+            "key": "closed",
+            "label": "Closed",
+            "applications": [
+                item
+                for item in application_list
+                if item.stage
+                in {
+                    Application.Stage.REJECTED,
+                    Application.Stage.WITHDRAWN,
+                }
+            ],
+        },
+    ]
     candidates = TechnicianProfile.objects.filter(is_visible=True).select_related(
         "user", "city_pool"
     )
@@ -448,7 +518,8 @@ def employer_dashboard(request):
             "form": form,
             "jobs": jobs,
             "candidates": candidates[:50],
-            "applications": applications,
+            "applications": application_list,
+            "pipeline_columns": pipeline_columns,
             "pools": CityPool.objects.filter(is_active=True),
             "availability_choices": TechnicianProfile.Availability.choices,
             "access_requests": employer.credential_requests.select_related(
@@ -608,7 +679,13 @@ def application_detail(request, application_id):
     application = get_object_or_404(
         Application.objects.select_related(
             "job__employer__user", "technician__user", "technician__city_pool"
-        ).prefetch_related("messages__sender"),
+        ).prefetch_related(
+            "messages__sender",
+            "technician__certifications",
+            "technician__work_history",
+            "technician__education",
+            "technician__reviews",
+        ),
         pk=application_id,
     )
     is_owner = _is_technician(request.user) and application.technician.user_id == request.user.id

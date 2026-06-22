@@ -7,12 +7,28 @@
     <span class="badge blue">{{ application.get_stage_display }}</span>
   </div>
   <div class="application-layout">
-    <main class="panel">
-      <div class="panel-head"><h2>Messages</h2></div>
-      <div class="message-thread">
-        {% for item in application.messages.all %}<article class="message {% if item.sender == request.user %}mine{% endif %}"><strong>{{ item.sender }}</strong><p>{{ item.body }}</p><time>{{ item.created_at|date:"M j, Y g:i A" }}</time></article>{% empty %}<div class="empty-compact">No messages yet.</div>{% endfor %}
-      </div>
-      <form method="post" action="{% url 'application_message' application.id %}" class="message-form">{% csrf_token %}{% include "marketplace/_form_fields.html" with form=message_form %}<button class="btn-sm" type="submit">Send message</button></form>
+    <main>
+      <section class="panel application-candidate">
+        <div class="candidate-snapshot-head">
+          <div class="avatar-circle">{{ application.technician.user.first_name|first }}{{ application.technician.user.last_name|first }}</div>
+          <div><span class="overview-kicker">Candidate profile</span><h2>{{ application.technician }}</h2><p>{{ application.technician.professional_title|default:"Automotive technician" }} · {{ application.technician.city_pool|default:"Location open" }} · {{ application.technician.years_experience }} years experience</p></div>
+          {% if is_hiring %}<a class="btn-sm ghost" href="{% url 'technician_profile_detail' application.technician.id %}">View full profile</a>{% endif %}
+        </div>
+        <p class="candidate-bio">{{ application.technician.bio|default:"No professional summary added." }}</p>
+        <div class="job-tags">{% for skill in application.technician.skills %}<span>{{ skill }}</span>{% empty %}<span>No skills listed</span>{% endfor %}</div>
+        <div class="candidate-profile-grid">
+          <div><span>Credentials</span><strong>{{ application.technician.certifications.count }}</strong><small>{% for cert in application.technician.certifications.all|slice:":2" %}{{ cert.name }}{% if not forloop.last %}, {% endif %}{% empty %}None listed{% endfor %}</small></div>
+          <div><span>Recent experience</span><strong>{{ application.technician.work_history.count }} role{{ application.technician.work_history.count|pluralize }}</strong><small>{% with recent=application.technician.work_history.all|first %}{% if recent %}{{ recent.role }} at {{ recent.company }}{% else %}No history listed{% endif %}{% endwith %}</small></div>
+          <div><span>Education</span><strong>{{ application.technician.education.count }} entr{{ application.technician.education.count|pluralize:"y,ies" }}</strong><small>{% with school=application.technician.education.all|first %}{% if school %}{{ school.program }}{% else %}None listed{% endif %}{% endwith %}</small></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Messages</h2></div>
+        <div class="message-thread">
+          {% for item in application.messages.all %}<article class="message {% if item.sender == request.user %}mine{% endif %}"><strong>{{ item.sender }}</strong><p>{{ item.body }}</p><time>{{ item.created_at|date:"M j, Y g:i A" }}</time></article>{% empty %}<div class="empty-compact">No messages yet.</div>{% endfor %}
+        </div>
+        <form method="post" action="{% url 'application_message' application.id %}" class="message-form">{% csrf_token %}{% include "marketplace/_form_fields.html" with form=message_form %}<button class="btn-sm" type="submit">Send message</button></form>
+      </section>
     </main>
     <aside>
       <section class="panel">
