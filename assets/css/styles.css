@@ -288,8 +288,8 @@ section { padding: 5.5rem 2rem; max-width: var(--maxw); margin: 0 auto; }
 .feature-desc { font-size: 0.88rem; color: var(--text-dim); line-height: 1.55; }
 
 /* ── PRICING ── */
-.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.pricing-card { padding: 2.1rem 1.8rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); position: relative; box-shadow: var(--shadow-1); }
+.pricing-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; align-items: stretch; }
+.pricing-card { padding: 2rem 1.35rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); position: relative; box-shadow: var(--shadow-1); display: flex; flex-direction: column; min-width: 0; }
 .pricing-card.featured { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), var(--shadow-2); }
 .featured-badge { position: absolute; top: 0; left: 50%; transform: translate(-50%,-50%); padding: 0.25rem 0.9rem; background: var(--primary); color: #fff; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; border-radius: 100px; }
 .pricing-plan { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.7rem; }
@@ -297,7 +297,7 @@ section { padding: 5.5rem 2rem; max-width: var(--maxw); margin: 0 auto; }
 .pricing-price sup { font-size: 1.2rem; vertical-align: top; margin-top: 0.5rem; color: var(--text-dim); }
 .pricing-price sub { font-size: 0.92rem; color: var(--muted); font-weight: 400; }
 .pricing-desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.4rem; }
-.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.7rem; }
+.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.7rem; flex: 1; }
 .pricing-features li { font-size: 0.88rem; color: var(--text-dim); display: flex; gap: 0.55rem; align-items: flex-start; }
 .pricing-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
 .btn-plan { width: 100%; padding: 0.78rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); transition: all 0.16s; }
@@ -758,6 +758,7 @@ table.data-table tr:hover td { background: var(--surface); }
   .app-rail { position: static; }
   .stat-row { grid-template-columns: repeat(2, 1fr); }
   .filter-bar { grid-template-columns: 1fr 1fr; }
+  .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-overview-grid { grid-template-columns: 1fr; }
   .job-detail-layout, .application-layout, .profile-detail-layout { grid-template-columns: 1fr; }
   .job-apply-card { position: static; }
@@ -779,7 +780,6 @@ table.data-table tr:hover td { background: var(--surface); }
   .hiw-steps { display: flex; flex-direction: column; }
   .hiw-step { min-height: 0; height: auto; }
   .features-grid { grid-template-columns: 1fr 1fr; }
-  .pricing-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .city-grid { grid-template-columns: repeat(2, 1fr); }
   .employer-panel { grid-template-columns: 1fr; }
@@ -796,6 +796,7 @@ table.data-table tr:hover td { background: var(--surface); }
   .candidate-search { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 600px) {
+  .pricing-grid { grid-template-columns: 1fr; }
   .auth-page { padding: 5.5rem .75rem 2rem; align-items: flex-start; }
   .auth-shell { border-radius: 14px; }
   .auth-main { padding: 1.5rem 1.2rem; }
