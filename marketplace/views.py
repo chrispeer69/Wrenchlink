@@ -223,9 +223,10 @@ def technician_profile_detail(request, technician_id):
             "certifications", "work_history", "education", "reviews"
         ),
         pk=technician_id,
-        is_visible=True,
     )
     is_owner = _is_technician(request.user) and technician.user_id == request.user.id
+    if not technician.is_visible and not (is_owner or request.user.is_staff):
+        raise Http404
     if not (is_owner or _is_employer(request.user) or request.user.is_staff):
         return HttpResponseForbidden("Employer access required.")
     employer = request.user.employer_profile if _is_employer(request.user) else None

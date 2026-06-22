@@ -201,6 +201,11 @@ class ProfessionalReference(models.Model):
 
 
 class TechnicianDocument(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        VERIFIED = "verified", "Verified"
+        REJECTED = "rejected", "Rejected"
+
     technician = models.ForeignKey(
         TechnicianProfile, on_delete=models.CASCADE, related_name="documents"
     )
@@ -211,7 +216,11 @@ class TechnicianDocument(models.Model):
     )
     content_type = models.CharField(max_length=150, blank=True)
     file_size = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
     is_verified = models.BooleanField(default=False)
+    rejection_reason = models.CharField(max_length=300, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 

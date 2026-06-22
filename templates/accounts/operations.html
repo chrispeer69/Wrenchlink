@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Platform Operations — WrenchLink{% endblock %}
+{% block content %}
+<div class="page operations-page">
+  <div class="page-head operations-head">
+    <div>
+      <div class="section-tag">Staff workspace</div>
+      <h1>Platform <em>operations</em></h1>
+      <p>Manage accounts, profile visibility, document reviews, marketplace activity, and billing records.</p>
+    </div>
+    {% if request.user.is_superuser %}
+      <a class="btn-sm ghost" href="{% url 'admin:index' %}">System administration</a>
+    {% endif %}
+  </div>
+
+  <div class="stat-row">
+    <article class="dash-stat"><div class="num">{{ active_user_count }}</div><div class="lbl">Active users</div></article>
+    <article class="dash-stat"><div class="num">{{ pending_review_count }}</div><div class="lbl">Pending document reviews</div></article>
+    <article class="dash-stat"><div class="num">{{ application_count }}</div><div class="lbl">Applications</div></article>
+    <article class="dash-stat"><div class="num">{{ active_subscription_count }}</div><div class="lbl">Active subscriptions</div></article>
+  </div>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar dashboard-tabs" aria-label="Operations sections">
+      <a class="sidebar-item active" href="#overview" data-dashboard-tab="overview">Overview</a>
+      <a class="sidebar-item" href="#users" data-dashboard-tab="users">Users</a>
+      <a class="sidebar-item" href="#documents" data-dashboard-tab="documents">
+        Document review{% if pending_review_count %}<span class="sidebar-badge">{{ pending_review_count }}</span>{% endif %}
+      </a>
+      <a class="sidebar-item" href="#profiles" data-dashboard-tab="profiles">Profiles</a>
+      <a class="sidebar-item" href="#marketplace" data-dashboard-tab="marketplace">Marketplace</a>
+      <a class="sidebar-item" href="#billing" data-dashboard-tab="billing">Billing</a>
+    </aside>
+
+    <main class="dashboard-tab-content">
+      <section class="dashboard-tab-panel active" id="overview" data-dashboard-panel="overview">
+        <div class="dashboard-overview-grid">
+          <article class="panel overview-action-card">
+            <span class="overview-kicker">Trust and safety</span>
+            <h2>Review uploaded records</h2>
+            <p>{{ pending_review_count }} file{{ pending_review_count|pluralize }} currently require staff approval before employer access.</p>
+            <a class="btn-sm" href="#documents" data-dashboard-tab-link="documents">Open review queue</a>
+          </article>
+          <article class="panel overview-action-card">
+            <span class="overview-kicker">Community</span>
+            <h2>{{ technician_count }} technicians, {{ employer_count }} employers</h2>
+            <p>Review account state, email verification, profile visibility, and employer verification.</p>
+            <a class="btn-sm ghost" href="#users" data-dashboard-tab-link="users">Manage accounts</a>
+          </article>
+          <article class="panel overview-action-card">
+            <span class="overview-kicker">Revenue operations</span>
+            <h2>${{ paid_invoice_total|floatformat:2 }} recorded paid</h2>
+            <p>Inspect Stripe-synchronized subscriptions and invoices without overwriting provider-owned billing state.</p>
+            <a class="btn-sm ghost" href="#billing" data-dashboard-tab-link="billing">View billing</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel dashboard-tab-panel" id="users" data-dashboard-panel="users">
+        <div class="panel-head">
+          <div><h2>User management</h2><p class="panel-subtitle">{{ user_count }} total account{{ user_count|pluralize }}</p></div>
+          <form class="operations-search" method="get" action="{% url 'accounts:operations' %}#users">
+            <input type="search" name="q" value="{{ search }}" maxlength="100" placeholder="Search name, email, or username">
+            <button class="btn-sm" type="submit">Search</button>
+          </form>
+        </div>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>User</th><th>Role</th><th>Email</th><th>State</th><th>Joined</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for account in users %}
+                <tr>
+                  <td><strong>{{ account.get_full_name|default:account.username }}</strong>{% if account.is_staff %}<span class="table-note">Staff account</span>{% endif %}</td>
+                  <td>{{ account.get_role_display }}</td>
+                  <td>{{ account.email|default:"No email" }}{% if account.email_verified %}<span class="table-note positive">Verified</span>{% else %}<span class="table-note warning">Unverified</span>{% endif %}</td>
+                  <td><span class="badge {% if account.is_active %}green{% else %}muted{% endif %}">{% if account.is_active %}Active{% else %}Suspended{% endif %}</span></td>
+                  <td>{{ account.date_joined|date:"M j, Y" }}</td>
+                  <td>
+                    {% if account.is_staff %}
+                      <span class="table-note">Protected</span>
+                    {% else %}
+                      <div class="operations-actions">
+                        {% if not account.email_verified %}
+                          <form method="post" action="{% url 'accounts:operations_user_action' account.id 'verify-email' %}">{% csrf_token %}<button class="table-action" type="submit">Verify email</button></form>
+                        {% endif %}
+                        <form method="post" action="{% url 'accounts:operations_user_action' account.id account.is_active|yesno:'suspend,activate' %}">{% csrf_token %}<button class="table-action {% if account.is_active %}danger{% endif %}" type="submit">{% if account.is_active %}Suspend{% else %}Activate{% endif %}</button></form>
+                      </div>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="6">No accounts match this search.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel dashboard-tab-panel" id="documents" data-dashboard-panel="documents">
+        <div class="panel-head"><div><h2>Document review queue</h2><p class="panel-subtitle">Files remain private until staff review is complete.</p></div><span class="badge yellow">{{ pending_review_count }} pending</span></div>
+        <div class="review-grid">
+          {% for document in pending_documents %}
+            <article class="review-card">
+              <div class="review-card-head">
+                <div><span class="overview-kicker">Document</span><h3>{{ document.name }}</h3><p>{{ document.technician.user.get_full_name|default:document.technician.user.username }} · {{ document.file_size|filesizeformat }}</p></div>
+                <a class="btn-sm ghost" href="{% url 'serve_document' document.id %}">Inspect file</a>
+              </div>
+              <div class="review-actions">
+                <form method="post" action="{% url 'accounts:operations_document_action' 'document' document.id 'approve' %}">{% csrf_token %}<button class="btn-sm" type="submit">Approve</button></form>
+                <form class="review-reject-form" method="post" action="{% url 'accounts:operations_document_action' 'document' document.id 'reject' %}">
+                  {% csrf_token %}<input name="reason" maxlength="300" placeholder="Reason for rejection"><button class="btn-sm danger-button" type="submit">Reject</button>
+                </form>
+              </div>
+            </article>
+          {% endfor %}
+          {% for certification in pending_certifications %}
+            <article class="review-card">
+              <div class="review-card-head">
+                <div><span class="overview-kicker">Certification</span><h3>{{ certification.name }}</h3><p>{{ certification.technician.user.get_full_name|default:certification.technician.user.username }}{% if certification.issuing_organization %} · {{ certification.issuing_organization }}{% endif %}</p></div>
+                {% if certification.file %}<a class="btn-sm ghost" href="{% url 'serve_certification' certification.id %}">Inspect file</a>{% endif %}
+              </div>
+              <div class="review-actions">
+                <form method="post" action="{% url 'accounts:operations_document_action' 'certification' certification.id 'approve' %}">{% csrf_token %}<button class="btn-sm" type="submit">Approve</button></form>
+                <form class="review-reject-form" method="post" action="{% url 'accounts:operations_document_action' 'certification' certification.id 'reject' %}">
+                  {% csrf_token %}<input name="reason" maxlength="300" placeholder="Reason for rejection"><button class="btn-sm danger-button" type="submit">Reject</button>
+                </form>
+              </div>
+            </article>
+          {% empty %}
+            {% if not pending_documents %}<div class="empty-state review-empty"><h3>Review queue is clear</h3><p>No documents or certifications are awaiting approval.</p></div>{% endif %}
+          {% endfor %}
+        </div>
+        <h3 class="operations-subhead">Recent review decisions</h3>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>Record</th><th>Technician</th><th>Type</th><th>Decision</th><th>Reason</th></tr></thead>
+            <tbody>
+              {% for document in reviewed_documents %}
+                <tr><td><a class="link-accent" href="{% url 'serve_document' document.id %}">{{ document.name }}</a></td><td>{{ document.technician.user.get_full_name|default:document.technician.user.username }}</td><td>Document</td><td><span class="badge {% if document.status == 'verified' %}green{% else %}muted{% endif %}">{{ document.get_status_display }}</span></td><td>{{ document.rejection_reason|default:"—" }}</td></tr>
+              {% endfor %}
+              {% for certification in reviewed_certifications %}
+                <tr><td>{% if certification.file %}<a class="link-accent" href="{% url 'serve_certification' certification.id %}">{{ certification.name }}</a>{% else %}{{ certification.name }}{% endif %}</td><td>{{ certification.technician.user.get_full_name|default:certification.technician.user.username }}</td><td>Certification</td><td><span class="badge {% if certification.status == 'verified' %}green{% else %}muted{% endif %}">{{ certification.get_status_display }}</span></td><td>{{ certification.rejection_reason|default:"—" }}</td></tr>
+              {% empty %}
+                {% if not reviewed_documents %}<tr><td colspan="5">No review decisions have been recorded.</td></tr>{% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel dashboard-tab-panel" id="profiles" data-dashboard-panel="profiles">
+        <div class="panel-head"><div><h2>Profile moderation</h2><p class="panel-subtitle">Control employer verification and technician marketplace visibility.</p></div></div>
+        <h3 class="operations-subhead">Employer profiles</h3>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>Company</th><th>Owner</th><th>Market</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>{% for profile in employers %}<tr>
+              <td><a class="link-accent" href="{% url 'employer_profile_detail' profile.id %}">{{ profile.company_name }}</a><span class="table-note">{{ profile.get_shop_type_display }}</span></td>
+              <td>{{ profile.user.email|default:profile.user.username }}</td><td>{{ profile.city_pool|default:"Not assigned" }}</td>
+              <td><span class="badge {% if profile.is_verified %}green{% else %}yellow{% endif %}">{% if profile.is_verified %}Verified{% else %}Pending{% endif %}</span></td>
+              <td><form method="post" action="{% url 'accounts:operations_profile_action' 'employer' profile.id profile.is_verified|yesno:'unverify,verify' %}">{% csrf_token %}<button class="table-action" type="submit">{% if profile.is_verified %}Remove verification{% else %}Verify employer{% endif %}</button></form></td>
+            </tr>{% empty %}<tr><td colspan="5">No employer profiles.</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+        <h3 class="operations-subhead">Technician profiles</h3>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>Technician</th><th>Title</th><th>Market</th><th>Visibility</th><th>Action</th></tr></thead>
+            <tbody>{% for profile in technicians %}<tr>
+              <td><a class="link-accent" href="{% url 'technician_profile_detail' profile.id %}">{{ profile.user.get_full_name|default:profile.user.username }}</a></td>
+              <td>{{ profile.professional_title|default:"Not completed" }}</td><td>{{ profile.city_pool|default:"Not assigned" }}</td>
+              <td><span class="badge {% if profile.is_visible %}green{% else %}muted{% endif %}">{% if profile.is_visible %}Visible{% else %}Hidden{% endif %}</span></td>
+              <td><form method="post" action="{% url 'accounts:operations_profile_action' 'technician' profile.id profile.is_visible|yesno:'hide,show' %}">{% csrf_token %}<button class="table-action {% if profile.is_visible %}danger{% endif %}" type="submit">{% if profile.is_visible %}Hide profile{% else %}Restore profile{% endif %}</button></form></td>
+            </tr>{% empty %}<tr><td colspan="5">No technician profiles.</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel dashboard-tab-panel" id="marketplace" data-dashboard-panel="marketplace">
+        <div class="panel-head"><div><h2>Marketplace oversight</h2><p class="panel-subtitle">Moderate listing availability while preserving the employer’s listing content.</p></div></div>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>Job</th><th>Employer</th><th>Market</th><th>Applications</th><th>Status</th></tr></thead>
+            <tbody>{% for job in jobs %}<tr>
+              <td><a class="link-accent" href="{{ job.get_absolute_url }}">{{ job.title }}</a><span class="table-note">Updated {{ job.updated_at|date:"M j, Y" }}</span></td>
+              <td>{{ job.employer.company_name }}</td><td>{{ job.city_pool|default:"Not assigned" }}</td><td>{{ job.application_total }}</td>
+              <td><form class="compact-form" method="post" action="{% url 'accounts:operations_job_status' job.id %}">{% csrf_token %}<select class="compact-select" name="status" aria-label="Job status">{% for value, label in job_status_choices %}<option value="{{ value }}" {% if job.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="table-action" type="submit">Save</button></form></td>
+            </tr>{% empty %}<tr><td colspan="5">No jobs have been created.</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel dashboard-tab-panel" id="billing" data-dashboard-panel="billing">
+        <div class="panel-head"><div><h2>Billing records</h2><p class="panel-subtitle">Read-only Stripe-synchronized state. Subscription changes remain in Stripe.</p></div><span class="badge blue">{{ active_subscription_count }} active</span></div>
+        <h3 class="operations-subhead">Subscriptions</h3>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>Account</th><th>Plan</th><th>Status</th><th>Period end</th><th>Stripe customer</th></tr></thead>
+            <tbody>{% for subscription in subscriptions %}<tr>
+              <td>{{ subscription.user.email|default:subscription.user.username }}</td><td>{{ subscription.plan|title }}</td>
+              <td><span class="badge {% if subscription.status == 'active' %}green{% elif subscription.status == 'past_due' %}yellow{% else %}muted{% endif %}">{{ subscription.get_status_display }}</span></td>
+              <td>{{ subscription.current_period_end|date:"M j, Y"|default:"Pending" }}</td><td><span class="mono-value">{{ subscription.stripe_customer_id|default:"Not created" }}</span></td>
+            </tr>{% empty %}<tr><td colspan="5">No subscriptions have been created.</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+        <h3 class="operations-subhead">Recent invoices</h3>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>Date</th><th>Account</th><th>Invoice</th><th>Amount</th><th>Status</th><th>Links</th></tr></thead>
+            <tbody>{% for invoice in invoices %}<tr>
+              <td>{{ invoice.created_at|date:"M j, Y" }}</td><td>{{ invoice.subscription.user.email|default:invoice.subscription.user.username }}</td><td><span class="mono-value">{{ invoice.stripe_invoice_id }}</span></td><td>{{ invoice.currency }} ${{ invoice.amount_due }}</td><td>{{ invoice.status|title }}</td>
+              <td>{% if invoice.hosted_invoice_url %}<a class="link-accent" href="{{ invoice.hosted_invoice_url }}" rel="noopener noreferrer">View</a>{% endif %}{% if invoice.invoice_pdf %} <a class="link-accent" href="{{ invoice.invoice_pdf }}" rel="noopener noreferrer">PDF</a>{% endif %}</td>
+            </tr>{% empty %}<tr><td colspan="6">No invoices have synchronized.</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll('[data-dashboard-tab]')];
+  const panels = [...document.querySelectorAll('[data-dashboard-panel]')];
+  const valid = new Set(panels.map(panel => panel.dataset.dashboardPanel));
+  const show = name => {
+    const selected = valid.has(name) ? name : 'overview';
+    tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.dashboardTab === selected));
+    panels.forEach(panel => {
+      const active = panel.dataset.dashboardPanel === selected;
+      panel.classList.toggle('active', active);
+      panel.hidden = !active;
+    });
+  };
+  tabs.forEach(tab => tab.addEventListener('click', event => {
+    event.preventDefault();
+    history.replaceState(null, '', tab.hash);
+    show(tab.dataset.dashboardTab);
+  }));
+  document.querySelectorAll('[data-dashboard-tab-link]').forEach(link => link.addEventListener('click', event => {
+    event.preventDefault();
+    history.replaceState(null, '', link.hash);
+    show(link.dataset.dashboardTabLink);
+  }));
+  show(location.hash.slice(1));
+})();
+</script>
+{% endblock %}

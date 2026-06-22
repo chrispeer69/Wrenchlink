@@ -3,7 +3,12 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import User
-from marketplace.models import EmployerProfile, TechnicianProfile
+from marketplace.models import (
+    Certification,
+    EmployerProfile,
+    TechnicianDocument,
+    TechnicianProfile,
+)
 
 
 class AuthenticationTests(TestCase):
@@ -93,3 +98,120 @@ class AuthenticationTests(TestCase):
             self.client.get(reverse("accounts:dashboard")),
             reverse("employer_dashboard"),
         )
+
+
+class OperationsPanelTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_superuser(
+            username="operations-admin",
+            password="A-long-test-password-821!",
+        )
+        self.technician_user = User.objects.create_user(
+            username="operator-test@example.com",
+            email="operator-test@example.com",
+            role=User.Role.TECHNICIAN,
+            email_verified=False,
+            password="A-long-test-password-821!",
+        )
+        self.technician = TechnicianProfile.objects.create(
+            user=self.technician_user,
+            professional_title="Diagnostic Technician",
+        )
+        self.document = TechnicianDocument.objects.create(
+            technician=self.technician,
+            name="Resume",
+            file="private/technicians/test/resume.pdf",
+        )
+        self.certification = Certification.objects.create(
+            technician=self.technician,
+            name="ASE A6",
+            file="private/technicians/test/ase.pdf",
+        )
+
+    def test_staff_dashboard_routes_to_branded_operations_panel(self):
+        self.client.force_login(self.staff)
+        self.assertRedirects(
+            self.client.get(reverse("accounts:dashboard")),
+            reverse("accounts:operations"),
+        )
+        response = self.client.get(reverse("accounts:operations"))
+        self.assertContains(response, "Platform <em>operations</em>", html=True)
+        self.assertContains(response, "Document review")
+
+    def test_non_staff_cannot_access_operations_panel(self):
+        self.client.force_login(self.technician_user)
+        self.assertEqual(
+            self.client.get(reverse("accounts:operations")).status_code,
+            403,
+        )
+
+    def test_staff_can_verify_and_suspend_public_user(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse(
+                "accounts:operations_user_action",
+                args=[self.technician_user.id, "verify-email"],
+            )
+        )
+        self.assertEqual(response.status_code, 302)
+        self.technician_user.refresh_from_db()
+        self.assertTrue(self.technician_user.email_verified)
+
+        self.client.post(
+            reverse(
+                "accounts:operations_user_action",
+                args=[self.technician_user.id, "suspend"],
+            )
+        )
+        self.technician_user.refresh_from_db()
+        self.assertFalse(self.technician_user.is_active)
+
+    def test_staff_account_cannot_be_suspended_in_operations_panel(self):
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse(
+                "accounts:operations_user_action",
+                args=[self.staff.id, "suspend"],
+            )
+        )
+        self.staff.refresh_from_db()
+        self.assertTrue(self.staff.is_active)
+
+    def test_document_review_records_approval_and_rejection(self):
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse(
+                "accounts:operations_document_action",
+                args=["document", self.document.id, "approve"],
+            )
+        )
+        self.document.refresh_from_db()
+        self.assertEqual(
+            self.document.status, TechnicianDocument.Status.VERIFIED
+        )
+        self.assertTrue(self.document.is_verified)
+
+        self.client.post(
+            reverse(
+                "accounts:operations_document_action",
+                args=["certification", self.certification.id, "reject"],
+            ),
+            {"reason": "The credential number is unreadable."},
+        )
+        self.certification.refresh_from_db()
+        self.assertEqual(
+            self.certification.status, Certification.Status.REJECTED
+        )
+        self.assertFalse(self.certification.is_verified)
+        self.assertEqual(
+            self.certification.rejection_reason,
+            "The credential number is unreadable.",
+        )
+
+    def test_operations_mutations_require_post(self):
+        self.client.force_login(self.staff)
+        url = reverse(
+            "accounts:operations_user_action",
+            args=[self.technician_user.id, "suspend"],
+        )
+        self.assertEqual(self.client.get(url).status_code, 405)

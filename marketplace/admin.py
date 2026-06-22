@@ -59,8 +59,8 @@ class CertificationAdmin(admin.ModelAdmin):
 
 @admin.register(TechnicianDocument)
 class TechnicianDocumentAdmin(admin.ModelAdmin):
-    list_display = ("name", "technician", "is_verified", "uploaded_at", "file_size")
-    list_filter = ("is_verified", "uploaded_at")
+    list_display = ("name", "technician", "status", "is_verified", "uploaded_at", "file_size")
+    list_filter = ("status", "is_verified", "uploaded_at")
     search_fields = ("name", "technician__user__email")
     readonly_fields = ("uploaded_at", "content_type", "file_size")
 

@@ -752,6 +752,45 @@ table.data-table tr:hover td { background: var(--surface); }
 .candidate-pipeline-panel .record-card { padding: .8rem; }
 .pipeline-back-link { display: inline-block; margin-top: .9rem; color: var(--accent); font-size: .78rem; font-weight: 700; text-decoration: none; }
 
+/* ── PLATFORM OPERATIONS ── */
+.operations-page { max-width: 1440px; }
+.operations-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.operations-head .page-head { margin-bottom: 0; }
+.operations-search { display: flex; align-items: center; gap: .5rem; }
+.operations-search input,
+.review-reject-form input { min-width: 240px; padding: .55rem .7rem; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: #fff; color: var(--text); font: inherit; font-size: .8rem; outline: none; }
+.operations-search input:focus,
+.review-reject-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.operations-table-wrap { width: 100%; overflow-x: auto; }
+.operations-table { min-width: 820px; }
+.operations-table td { vertical-align: middle; }
+.operations-table td strong { display: block; color: var(--text); }
+.table-note { display: block; margin-top: .2rem; color: var(--muted); font-size: .68rem; }
+.table-note.positive { color: var(--green); }
+.table-note.warning { color: var(--amber); }
+.operations-actions,
+.review-actions,
+.review-reject-form { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+.operations-actions form,
+.review-actions form { margin: 0; }
+.table-action { padding: .38rem .55rem; border: 1px solid var(--line-2); border-radius: 6px; background: #fff; color: var(--text-dim); font: 600 .72rem Inter, sans-serif; cursor: pointer; white-space: nowrap; }
+.table-action:hover { border-color: var(--primary); color: var(--primary); }
+.table-action.danger:hover { border-color: var(--red); color: var(--red); }
+.operations-subhead { margin: 1.5rem 0 .65rem; color: var(--primary); font-size: .92rem; }
+.operations-subhead:first-of-type { margin-top: 0; }
+.review-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+.review-card { padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.review-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.review-card h3 { margin: .25rem 0; color: var(--primary); font-size: 1rem; }
+.review-card p { color: var(--muted); font-size: .76rem; line-height: 1.45; }
+.review-actions { margin-top: 1rem; padding-top: .85rem; border-top: 1px solid var(--line); }
+.review-reject-form { flex: 1; }
+.review-reject-form input { flex: 1; min-width: 150px; }
+.danger-button { background: var(--red); }
+.danger-button:hover { background: #9f2d2d; }
+.review-empty { grid-column: 1 / -1; }
+.mono-value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; overflow-wrap: anywhere; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
   .app-layout { grid-template-columns: 1fr; }
@@ -763,6 +802,7 @@ table.data-table tr:hover td { background: var(--surface); }
   .job-detail-layout, .application-layout, .profile-detail-layout { grid-template-columns: 1fr; }
   .job-apply-card { position: static; }
   .profile-detail-layout > aside { position: static; }
+  .review-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 900px) {
   nav { padding: 0 1.25rem; }
@@ -836,6 +876,13 @@ table.data-table tr:hover td { background: var(--surface); }
   .profile-detail-header { align-items: flex-start; flex-direction: column; }
   .dashboard-layout { gap: .9rem; }
   .dashboard-tabs { margin: 0 -.25rem; }
+  .operations-head { align-items: flex-start; flex-direction: column; }
+  .operations-search { width: 100%; align-items: stretch; flex-direction: column; }
+  .operations-search input { width: 100%; min-width: 0; }
+  .review-card-head { flex-direction: column; }
+  .review-card-head .btn-sm { width: 100%; }
+  .review-actions, .review-reject-form { align-items: stretch; flex-direction: column; width: 100%; }
+  .review-actions .btn-sm, .review-reject-form input { width: 100%; }
   .dashboard-tab-content > .panel { padding: 1rem; }
   .pipeline-board { margin-right: -.25rem; }
   .notification-head { display: none; }

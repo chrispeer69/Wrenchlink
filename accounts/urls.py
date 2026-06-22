@@ -14,6 +14,27 @@ urlpatterns = [
     path("register/technician/", views.register_technician, name="register_technician"),
     path("register/employer/", views.register_employer, name="register_employer"),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("operations/", views.operations, name="operations"),
+    path(
+        "operations/users/<int:user_id>/<str:action>/",
+        views.operations_user_action,
+        name="operations_user_action",
+    ),
+    path(
+        "operations/documents/<str:kind>/<int:object_id>/<str:decision>/",
+        views.operations_document_action,
+        name="operations_document_action",
+    ),
+    path(
+        "operations/profiles/<str:kind>/<int:object_id>/<str:action>/",
+        views.operations_profile_action,
+        name="operations_profile_action",
+    ),
+    path(
+        "operations/jobs/<int:job_id>/status/",
+        views.operations_job_status,
+        name="operations_job_status",
+    ),
     path("verify/<uidb64>/<token>/", views.verify_email, name="verify_email"),
     path(
         "password-reset/",
