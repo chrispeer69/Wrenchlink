@@ -4,6 +4,11 @@ WrenchLink is a Django marketplace connecting automotive technicians with repair
 
 The Django application preserves the original WrenchLink HTML/CSS design while replacing browser-only demo storage with real authentication, PostgreSQL-backed records, protected uploads and Stripe billing records.
 
+For a detailed engineering handoff covering architecture, models, workflows,
+security, deployment, implemented features, known limitations, and safe extension
+guidelines, read [`ARCHITECTURE.md`](ARCHITECTURE.md) before making structural
+changes.
+
 ## Current architecture
 
 - Django 5.2
