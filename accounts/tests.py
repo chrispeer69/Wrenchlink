@@ -2,16 +2,27 @@ from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import User
+from .models import ModerationAction, User
 from marketplace.models import (
     Certification,
     EmployerProfile,
+    Notification,
     TechnicianDocument,
     TechnicianProfile,
 )
 
 
 class AuthenticationTests(TestCase):
+    def test_registration_location_dropdown_includes_other(self):
+        technician_response = self.client.get(
+            reverse("accounts:register_technician")
+        )
+        employer_response = self.client.get(reverse("accounts:register_employer"))
+        self.assertContains(
+            technician_response, "Other / location not listed"
+        )
+        self.assertContains(employer_response, "Other / location not listed")
+
     def test_superuser_creation_does_not_require_public_account_role(self):
         user = User.objects.create_superuser(
             username="admin",
@@ -138,6 +149,12 @@ class OperationsPanelTests(TestCase):
         self.assertContains(response, "Platform <em>operations</em>", html=True)
         self.assertContains(response, "Document review")
 
+    def test_django_admin_links_to_branded_control_panel(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, "WrenchLink Control Panel")
+        self.assertContains(response, reverse("accounts:operations"))
+
     def test_non_staff_cannot_access_operations_panel(self):
         self.client.force_login(self.technician_user)
         self.assertEqual(
@@ -161,10 +178,24 @@ class OperationsPanelTests(TestCase):
             reverse(
                 "accounts:operations_user_action",
                 args=[self.technician_user.id, "suspend"],
-            )
+            ),
+            {"reason": "Repeated violations of the marketplace rules."},
         )
         self.technician_user.refresh_from_db()
         self.assertFalse(self.technician_user.is_active)
+        self.assertTrue(
+            ModerationAction.objects.filter(
+                target_user=self.technician_user,
+                action="account_suspended",
+            ).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.technician_user,
+                event=Notification.Event.SYSTEM,
+                body__icontains="marketplace rules",
+            ).exists()
+        )
 
     def test_staff_account_cannot_be_suspended_in_operations_panel(self):
         self.client.force_login(self.staff)
@@ -206,6 +237,103 @@ class OperationsPanelTests(TestCase):
         self.assertEqual(
             self.certification.rejection_reason,
             "The credential number is unreadable.",
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.technician_user,
+                body__icontains="credential number is unreadable",
+            ).exists()
+        )
+        self.assertTrue(
+            ModerationAction.objects.filter(
+                target_user=self.technician_user,
+                action="certification_reject",
+            ).exists()
+        )
+        self.assertGreaterEqual(len(mail.outbox), 2)
+
+    def test_rejection_requires_a_reason(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse(
+                "accounts:operations_document_action",
+                args=["document", self.document.id, "reject"],
+            )
+        )
+        self.assertRedirects(
+            response, f"{reverse('accounts:operations')}#documents"
+        )
+        self.document.refresh_from_db()
+        self.assertEqual(self.document.status, TechnicianDocument.Status.PENDING)
+        self.assertFalse(
+            ModerationAction.objects.filter(
+                target_user=self.technician_user,
+                action="document_reject",
+            ).exists()
+        )
+
+    def test_staff_can_send_direct_user_message(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse(
+                "accounts:operations_send_message",
+                args=[self.technician_user.id],
+            ),
+            {
+                "subject": "Profile information required",
+                "message": "Please add your current certification expiration dates.",
+            },
+        )
+        self.assertRedirects(response, f"{reverse('accounts:operations')}#users")
+        self.assertTrue(
+            ModerationAction.objects.filter(
+                target_user=self.technician_user,
+                action="staff_message",
+                subject="Profile information required",
+            ).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.technician_user,
+                title="Profile information required",
+            ).exists()
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("certification expiration dates", mail.outbox[0].body)
+
+    def test_staff_can_reject_employer_with_persistent_reason(self):
+        employer_user = User.objects.create_user(
+            username="review-shop@example.com",
+            email="review-shop@example.com",
+            role=User.Role.EMPLOYER,
+            email_verified=True,
+            password="A-long-test-password-821!",
+        )
+        employer = EmployerProfile.objects.create(
+            user=employer_user,
+            company_name="Review Auto",
+            shop_type=EmployerProfile.ShopType.REPAIR,
+        )
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse(
+                "accounts:operations_profile_action",
+                args=["employer", employer.id, "reject"],
+            ),
+            {"reason": "Business ownership documents could not be verified."},
+        )
+        employer.refresh_from_db()
+        self.assertEqual(
+            employer.verification_status,
+            EmployerProfile.VerificationStatus.REJECTED,
+        )
+        self.assertFalse(employer.is_verified)
+        self.assertIn("ownership documents", employer.rejection_reason)
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=employer_user,
+                body__icontains="ownership documents",
+            ).exists()
         )
 
     def test_operations_mutations_require_post(self):

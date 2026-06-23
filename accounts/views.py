@@ -1,5 +1,6 @@
 from functools import wraps
 
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -20,12 +21,13 @@ from marketplace.models import (
     Certification,
     EmployerProfile,
     Job,
+    Notification,
     TechnicianDocument,
     TechnicianProfile,
 )
 
 from .forms import EmployerRegistrationForm, LoginForm, TechnicianRegistrationForm
-from .models import User
+from .models import ModerationAction, User
 
 
 class WrenchLinkLoginView(LoginView):
@@ -43,6 +45,53 @@ def staff_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return wrapped
+
+
+def _moderation_notice(
+    actor,
+    target_user,
+    action,
+    subject,
+    message,
+    *,
+    link="",
+    object_type="",
+    object_id=None,
+):
+    clean_subject = subject.strip()[:180]
+    clean_message = message.strip()[:600]
+    ModerationAction.objects.create(
+        actor=actor,
+        target_user=target_user,
+        action=action[:60],
+        subject=clean_subject,
+        message=clean_message,
+        object_type=object_type[:40],
+        object_id=object_id,
+    )
+    Notification.objects.create(
+        recipient=target_user,
+        event=Notification.Event.SYSTEM,
+        title=clean_subject[:150],
+        body=clean_message,
+        link=link[:300],
+    )
+    if target_user.email:
+        send_mail(
+            f"WrenchLink: {clean_subject[:120]}",
+            f"{clean_message}\n\nSign in to WrenchLink to review this update.",
+            settings.DEFAULT_FROM_EMAIL,
+            [target_user.email],
+            fail_silently=True,
+        )
+
+
+def _required_reason(request, label):
+    reason = request.POST.get("reason", "").strip()[:600]
+    if not reason:
+        messages.error(request, f"Enter a reason before {label}.")
+        return None
+    return reason
 
 
 def _send_verification(request, user):
@@ -170,6 +219,9 @@ def operations(request):
         )["total"]
         or 0,
         "invoices": invoices[:100],
+        "moderation_actions": ModerationAction.objects.select_related(
+            "actor", "target_user"
+        )[:100],
     }
     return render(request, "accounts/operations.html", context)
 
@@ -185,14 +237,37 @@ def operations_user_action(request, user_id, action):
     if action == "activate":
         user.is_active = True
         user.save(update_fields=["is_active"])
+        notice = request.POST.get("message", "").strip()[:600] or (
+            "Your WrenchLink account has been reactivated. You can sign in and use the platform again."
+        )
+        _moderation_notice(
+            request.user, user, "account_activated", "Account reactivated", notice
+        )
         messages.success(request, "User account activated.")
     elif action == "suspend":
+        reason = _required_reason(request, "suspending this account")
+        if reason is None:
+            return redirect(f"{reverse('accounts:operations')}#users")
         user.is_active = False
         user.save(update_fields=["is_active"])
+        _moderation_notice(
+            request.user,
+            user,
+            "account_suspended",
+            "Account suspended",
+            reason,
+        )
         messages.success(request, "User account suspended.")
     elif action == "verify-email":
         user.email_verified = True
         user.save(update_fields=["email_verified"])
+        _moderation_notice(
+            request.user,
+            user,
+            "email_verified",
+            "Email verification completed",
+            "WrenchLink staff verified the email address on your account.",
+        )
         messages.success(request, "User email marked as verified.")
     else:
         return HttpResponseBadRequest("Unsupported user action.")
@@ -204,34 +279,64 @@ def operations_user_action(request, user_id, action):
 def operations_document_action(request, kind, object_id, decision):
     if kind == "document":
         item = get_object_or_404(TechnicianDocument, pk=object_id)
+        target_user = item.technician.user
+        label = item.name
+        link = reverse("technician_vault") + "#documents"
         if decision == "approve":
             item.status = TechnicianDocument.Status.VERIFIED
             item.is_verified = True
             item.rejection_reason = ""
+            notice = (
+                f'Your document "{label}" was approved and is now marked as verified.'
+            )
         elif decision == "reject":
+            reason = _required_reason(request, "rejecting this document")
+            if reason is None:
+                return redirect(f"{reverse('accounts:operations')}#documents")
             item.status = TechnicianDocument.Status.REJECTED
             item.is_verified = False
-            item.rejection_reason = request.POST.get("reason", "").strip()[:300]
+            item.rejection_reason = reason[:300]
+            notice = f'Your document "{label}" was rejected. Reason: {reason}'
         else:
             return HttpResponseBadRequest("Unsupported review decision.")
         item.save(update_fields=["status", "is_verified", "rejection_reason"])
     elif kind == "certification":
         item = get_object_or_404(Certification, pk=object_id)
+        target_user = item.technician.user
+        label = item.name
+        link = reverse("technician_vault") + "#certification"
         if decision == "approve":
             item.status = Certification.Status.VERIFIED
             item.is_verified = True
             item.rejection_reason = ""
+            notice = (
+                f'Your certification "{label}" was approved and is now verified.'
+            )
         elif decision == "reject":
+            reason = _required_reason(request, "rejecting this certification")
+            if reason is None:
+                return redirect(f"{reverse('accounts:operations')}#documents")
             item.status = Certification.Status.REJECTED
             item.is_verified = False
-            item.rejection_reason = request.POST.get("reason", "").strip()[:300]
+            item.rejection_reason = reason[:300]
+            notice = f'Your certification "{label}" was rejected. Reason: {reason}'
         else:
             return HttpResponseBadRequest("Unsupported review decision.")
         item.save(update_fields=["status", "is_verified", "rejection_reason"])
     else:
         return HttpResponseBadRequest("Unsupported document type.")
 
-    messages.success(request, f"Review saved: {decision}.")
+    _moderation_notice(
+        request.user,
+        target_user,
+        f"{kind}_{decision}",
+        f"{label}: {decision.title()}",
+        notice,
+        link=link,
+        object_type=kind,
+        object_id=item.pk,
+    )
+    messages.success(request, f"Review saved and user notified: {decision}.")
     return redirect(f"{reverse('accounts:operations')}#documents")
 
 
@@ -240,20 +345,62 @@ def operations_document_action(request, kind, object_id, decision):
 def operations_profile_action(request, kind, object_id, action):
     if kind == "employer":
         profile = get_object_or_404(EmployerProfile, pk=object_id)
-        if action not in {"verify", "unverify"}:
+        if action not in {"verify", "reject", "unverify"}:
             return HttpResponseBadRequest("Unsupported employer action.")
+        if action in {"reject", "unverify"}:
+            notice = _required_reason(request, "removing employer verification")
+            if notice is None:
+                return redirect(f"{reverse('accounts:operations')}#profiles")
+            profile.verification_status = EmployerProfile.VerificationStatus.REJECTED
+            profile.rejection_reason = notice
+        else:
+            notice = (
+                f"{profile.company_name} has been verified for use on WrenchLink."
+            )
+            profile.verification_status = EmployerProfile.VerificationStatus.VERIFIED
+            profile.rejection_reason = ""
         profile.is_verified = action == "verify"
-        profile.save(update_fields=["is_verified"])
+        profile.save(
+            update_fields=["verification_status", "is_verified", "rejection_reason"]
+        )
+        target_user = profile.user
+        subject = (
+            "Employer profile verified"
+            if action == "verify"
+            else "Employer verification declined"
+        )
     elif kind == "technician":
         profile = get_object_or_404(TechnicianProfile, pk=object_id)
         if action not in {"show", "hide"}:
             return HttpResponseBadRequest("Unsupported technician action.")
+        if action == "hide":
+            notice = _required_reason(request, "hiding this profile")
+            if notice is None:
+                return redirect(f"{reverse('accounts:operations')}#profiles")
+        else:
+            notice = "Your technician profile has been restored to marketplace search."
         profile.is_visible = action == "show"
         profile.save(update_fields=["is_visible"])
+        target_user = profile.user
+        subject = (
+            "Technician profile restored"
+            if action == "show"
+            else "Technician profile hidden"
+        )
     else:
         return HttpResponseBadRequest("Unsupported profile type.")
 
-    messages.success(request, "Profile moderation status updated.")
+    _moderation_notice(
+        request.user,
+        target_user,
+        f"{kind}_{action}",
+        subject,
+        notice,
+        link=reverse("accounts:dashboard"),
+        object_type=f"{kind}_profile",
+        object_id=profile.pk,
+    )
+    messages.success(request, "Profile moderation status updated and user notified.")
     return redirect(f"{reverse('accounts:operations')}#profiles")
 
 
@@ -266,8 +413,43 @@ def operations_job_status(request, job_id):
         return HttpResponseBadRequest("Unsupported job status.")
     job.status = status
     job.save(update_fields=["status", "updated_at"])
-    messages.success(request, "Job status updated.")
+    status_label = dict(Job.Status.choices)[status]
+    notice = request.POST.get("message", "").strip()[:600] or (
+        f'WrenchLink staff changed the status of "{job.title}" to {status_label}.'
+    )
+    _moderation_notice(
+        request.user,
+        job.employer.user,
+        "job_status_changed",
+        "Job status updated",
+        notice,
+        link=job.get_absolute_url(),
+        object_type="job",
+        object_id=job.pk,
+    )
+    messages.success(request, "Job status updated and employer notified.")
     return redirect(f"{reverse('accounts:operations')}#marketplace")
+
+
+@staff_required
+@require_POST
+def operations_send_message(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    subject = request.POST.get("subject", "").strip()[:180]
+    message_text = request.POST.get("message", "").strip()[:600]
+    if not subject or not message_text:
+        messages.error(request, "A subject and message are required.")
+        return redirect(f"{reverse('accounts:operations')}#users")
+    _moderation_notice(
+        request.user,
+        user,
+        "staff_message",
+        subject,
+        message_text,
+        link=reverse("accounts:dashboard"),
+    )
+    messages.success(request, "Message sent in WrenchLink and by email when available.")
+    return redirect(f"{reverse('accounts:operations')}#users")
 
 
 def verify_email(request, uidb64, token):

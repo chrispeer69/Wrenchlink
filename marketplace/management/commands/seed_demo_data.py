@@ -116,7 +116,9 @@ class Command(BaseCommand):
                     "description": description,
                     "phone": "(555) 010-2026",
                     "perks": perks,
+                    "verification_status": EmployerProfile.VerificationStatus.VERIFIED,
                     "is_verified": True,
+                    "rejection_reason": "",
                 },
             )
             employers[company] = profile

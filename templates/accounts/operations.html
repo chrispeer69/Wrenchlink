@@ -29,6 +29,7 @@
       </a>
       <a class="sidebar-item" href="#profiles" data-dashboard-tab="profiles">Profiles</a>
       <a class="sidebar-item" href="#marketplace" data-dashboard-tab="marketplace">Marketplace</a>
+      <a class="sidebar-item" href="#activity" data-dashboard-tab="activity">Moderation history</a>
       <a class="sidebar-item" href="#billing" data-dashboard-tab="billing">Billing</a>
     </aside>
 
@@ -79,12 +80,33 @@
                     {% if account.is_staff %}
                       <span class="table-note">Protected</span>
                     {% else %}
-                      <div class="operations-actions">
-                        {% if not account.email_verified %}
-                          <form method="post" action="{% url 'accounts:operations_user_action' account.id 'verify-email' %}">{% csrf_token %}<button class="table-action" type="submit">Verify email</button></form>
-                        {% endif %}
-                        <form method="post" action="{% url 'accounts:operations_user_action' account.id account.is_active|yesno:'suspend,activate' %}">{% csrf_token %}<button class="table-action {% if account.is_active %}danger{% endif %}" type="submit">{% if account.is_active %}Suspend{% else %}Activate{% endif %}</button></form>
-                      </div>
+                      <details class="admin-action-menu">
+                        <summary class="table-action">Manage</summary>
+                        <div class="admin-action-panel">
+                          {% if not account.email_verified %}
+                            <form method="post" action="{% url 'accounts:operations_user_action' account.id 'verify-email' %}">{% csrf_token %}<button class="btn-sm ghost" type="submit">Verify email</button></form>
+                          {% endif %}
+                          {% if account.is_active %}
+                            <form method="post" action="{% url 'accounts:operations_user_action' account.id 'suspend' %}">
+                              {% csrf_token %}
+                              <label>Suspension reason<input name="reason" maxlength="600" required placeholder="Explain the policy or account issue"></label>
+                              <button class="btn-sm danger-button" type="submit">Suspend account</button>
+                            </form>
+                          {% else %}
+                            <form method="post" action="{% url 'accounts:operations_user_action' account.id 'activate' %}">
+                              {% csrf_token %}
+                              <label>Activation note<input name="message" maxlength="600" placeholder="Optional message to the user"></label>
+                              <button class="btn-sm" type="submit">Reactivate account</button>
+                            </form>
+                          {% endif %}
+                          <form method="post" action="{% url 'accounts:operations_send_message' account.id %}">
+                            {% csrf_token %}
+                            <label>Message subject<input name="subject" maxlength="180" required placeholder="Account update"></label>
+                            <label>Message<textarea name="message" maxlength="600" rows="3" required placeholder="Write a direct staff message"></textarea></label>
+                            <button class="btn-sm ghost" type="submit">Send message</button>
+                          </form>
+                        </div>
+                      </details>
                     {% endif %}
                   </td>
                 </tr>
@@ -108,7 +130,7 @@
               <div class="review-actions">
                 <form method="post" action="{% url 'accounts:operations_document_action' 'document' document.id 'approve' %}">{% csrf_token %}<button class="btn-sm" type="submit">Approve</button></form>
                 <form class="review-reject-form" method="post" action="{% url 'accounts:operations_document_action' 'document' document.id 'reject' %}">
-                  {% csrf_token %}<input name="reason" maxlength="300" placeholder="Reason for rejection"><button class="btn-sm danger-button" type="submit">Reject</button>
+                  {% csrf_token %}<input name="reason" maxlength="600" required placeholder="Reason sent to the technician"><button class="btn-sm danger-button" type="submit">Reject</button>
                 </form>
               </div>
             </article>
@@ -122,7 +144,7 @@
               <div class="review-actions">
                 <form method="post" action="{% url 'accounts:operations_document_action' 'certification' certification.id 'approve' %}">{% csrf_token %}<button class="btn-sm" type="submit">Approve</button></form>
                 <form class="review-reject-form" method="post" action="{% url 'accounts:operations_document_action' 'certification' certification.id 'reject' %}">
-                  {% csrf_token %}<input name="reason" maxlength="300" placeholder="Reason for rejection"><button class="btn-sm danger-button" type="submit">Reject</button>
+                  {% csrf_token %}<input name="reason" maxlength="600" required placeholder="Reason sent to the technician"><button class="btn-sm danger-button" type="submit">Reject</button>
                 </form>
               </div>
             </article>
@@ -157,8 +179,17 @@
             <tbody>{% for profile in employers %}<tr>
               <td><a class="link-accent" href="{% url 'employer_profile_detail' profile.id %}">{{ profile.company_name }}</a><span class="table-note">{{ profile.get_shop_type_display }}</span></td>
               <td>{{ profile.user.email|default:profile.user.username }}</td><td>{{ profile.city_pool|default:"Not assigned" }}</td>
-              <td><span class="badge {% if profile.is_verified %}green{% else %}yellow{% endif %}">{% if profile.is_verified %}Verified{% else %}Pending{% endif %}</span></td>
-              <td><form method="post" action="{% url 'accounts:operations_profile_action' 'employer' profile.id profile.is_verified|yesno:'unverify,verify' %}">{% csrf_token %}<button class="table-action" type="submit">{% if profile.is_verified %}Remove verification{% else %}Verify employer{% endif %}</button></form></td>
+              <td><span class="badge {% if profile.verification_status == 'verified' %}green{% elif profile.verification_status == 'rejected' %}muted{% else %}yellow{% endif %}">{{ profile.get_verification_status_display }}</span>{% if profile.rejection_reason %}<span class="table-note warning">{{ profile.rejection_reason }}</span>{% endif %}</td>
+              <td>
+                {% if profile.is_verified %}
+                  <form class="inline-moderation-form" method="post" action="{% url 'accounts:operations_profile_action' 'employer' profile.id 'unverify' %}">{% csrf_token %}<input name="reason" maxlength="600" required placeholder="Reason sent to employer"><button class="table-action danger" type="submit">Remove verification</button></form>
+                {% else %}
+                  <div class="operations-actions">
+                    <form method="post" action="{% url 'accounts:operations_profile_action' 'employer' profile.id 'verify' %}">{% csrf_token %}<button class="table-action" type="submit">Verify</button></form>
+                    <form class="inline-moderation-form" method="post" action="{% url 'accounts:operations_profile_action' 'employer' profile.id 'reject' %}">{% csrf_token %}<input name="reason" maxlength="600" required placeholder="Rejection reason"><button class="table-action danger" type="submit">Reject</button></form>
+                  </div>
+                {% endif %}
+              </td>
             </tr>{% empty %}<tr><td colspan="5">No employer profiles.</td></tr>{% endfor %}</tbody>
           </table>
         </div>
@@ -170,7 +201,13 @@
               <td><a class="link-accent" href="{% url 'technician_profile_detail' profile.id %}">{{ profile.user.get_full_name|default:profile.user.username }}</a></td>
               <td>{{ profile.professional_title|default:"Not completed" }}</td><td>{{ profile.city_pool|default:"Not assigned" }}</td>
               <td><span class="badge {% if profile.is_visible %}green{% else %}muted{% endif %}">{% if profile.is_visible %}Visible{% else %}Hidden{% endif %}</span></td>
-              <td><form method="post" action="{% url 'accounts:operations_profile_action' 'technician' profile.id profile.is_visible|yesno:'hide,show' %}">{% csrf_token %}<button class="table-action {% if profile.is_visible %}danger{% endif %}" type="submit">{% if profile.is_visible %}Hide profile{% else %}Restore profile{% endif %}</button></form></td>
+              <td>
+                {% if profile.is_visible %}
+                  <form class="inline-moderation-form" method="post" action="{% url 'accounts:operations_profile_action' 'technician' profile.id 'hide' %}">{% csrf_token %}<input name="reason" maxlength="600" required placeholder="Reason sent to technician"><button class="table-action danger" type="submit">Hide profile</button></form>
+                {% else %}
+                  <form method="post" action="{% url 'accounts:operations_profile_action' 'technician' profile.id 'show' %}">{% csrf_token %}<button class="table-action" type="submit">Restore profile</button></form>
+                {% endif %}
+              </td>
             </tr>{% empty %}<tr><td colspan="5">No technician profiles.</td></tr>{% endfor %}</tbody>
           </table>
         </div>
@@ -184,8 +221,31 @@
             <tbody>{% for job in jobs %}<tr>
               <td><a class="link-accent" href="{{ job.get_absolute_url }}">{{ job.title }}</a><span class="table-note">Updated {{ job.updated_at|date:"M j, Y" }}</span></td>
               <td>{{ job.employer.company_name }}</td><td>{{ job.city_pool|default:"Not assigned" }}</td><td>{{ job.application_total }}</td>
-              <td><form class="compact-form" method="post" action="{% url 'accounts:operations_job_status' job.id %}">{% csrf_token %}<select class="compact-select" name="status" aria-label="Job status">{% for value, label in job_status_choices %}<option value="{{ value }}" {% if job.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="table-action" type="submit">Save</button></form></td>
+              <td><form class="job-moderation-form" method="post" action="{% url 'accounts:operations_job_status' job.id %}">{% csrf_token %}<select class="compact-select" name="status" aria-label="Job status">{% for value, label in job_status_choices %}<option value="{{ value }}" {% if job.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><input name="message" maxlength="600" placeholder="Optional employer message"><button class="table-action" type="submit">Save</button></form></td>
             </tr>{% empty %}<tr><td colspan="5">No jobs have been created.</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel dashboard-tab-panel" id="activity" data-dashboard-panel="activity">
+        <div class="panel-head"><div><h2>Moderation history</h2><p class="panel-subtitle">A permanent staff audit trail of account, profile, document, job, and direct-message actions.</p></div></div>
+        <div class="operations-table-wrap">
+          <table class="data-table operations-table">
+            <thead><tr><th>Date</th><th>Staff</th><th>User</th><th>Action</th><th>Subject</th><th>Message</th></tr></thead>
+            <tbody>
+              {% for item in moderation_actions %}
+                <tr>
+                  <td>{{ item.created_at|date:"M j, Y g:i A" }}</td>
+                  <td>{{ item.actor.get_full_name|default:item.actor.username|default:"Deleted staff" }}</td>
+                  <td>{{ item.target_user.email|default:item.target_user.username }}</td>
+                  <td><span class="badge muted">{{ item.action|cut:"_"|title }}</span></td>
+                  <td>{{ item.subject }}</td>
+                  <td>{{ item.message|default:"—" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="6">No moderation actions have been recorded.</td></tr>
+              {% endfor %}
+            </tbody>
           </table>
         </div>
       </section>

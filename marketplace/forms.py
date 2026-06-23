@@ -57,6 +57,7 @@ class TechnicianProfileForm(StyledModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["city_pool"].empty_label = "Other / location not listed"
         if self.instance.pk:
             self.fields["skills_text"].initial = ", ".join(self.instance.skills)
 
@@ -94,6 +95,7 @@ class EmployerProfileForm(StyledModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["city_pool"].empty_label = "Other / location not listed"
         if self.instance.pk:
             self.fields["perks_text"].initial = ", ".join(self.instance.perks)
 
@@ -177,6 +179,8 @@ class JobForm(StyledModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["city_pool"].required = False
+        self.fields["city_pool"].empty_label = "Other / location not listed"
         if self.instance.pk:
             self.fields["benefits_text"].initial = ", ".join(self.instance.benefits)
 

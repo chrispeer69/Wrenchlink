@@ -791,6 +791,23 @@ table.data-table tr:hover td { background: var(--surface); }
 .danger-button:hover { background: #9f2d2d; }
 .review-empty { grid-column: 1 / -1; }
 .mono-value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; overflow-wrap: anywhere; }
+.admin-action-menu { position: relative; width: fit-content; }
+.admin-action-menu > summary { list-style: none; }
+.admin-action-menu > summary::-webkit-details-marker { display: none; }
+.admin-action-panel { position: absolute; z-index: 20; top: calc(100% + .4rem); right: 0; width: min(360px, 80vw); padding: .85rem; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: var(--shadow-3); }
+.admin-action-panel form { display: flex; flex-direction: column; align-items: stretch; gap: .5rem; margin: 0; padding: .7rem 0; border-bottom: 1px solid var(--line); }
+.admin-action-panel form:first-child { padding-top: 0; }
+.admin-action-panel form:last-child { padding-bottom: 0; border-bottom: 0; }
+.admin-action-panel label { color: var(--text-dim); font-size: .7rem; font-weight: 700; }
+.admin-action-panel input,
+.admin-action-panel textarea,
+.inline-moderation-form input,
+.job-moderation-form input { width: 100%; margin-top: .3rem; padding: .5rem .6rem; border: 1px solid var(--line-2); border-radius: 6px; background: #fff; color: var(--text); font: inherit; font-size: .75rem; }
+.admin-action-panel textarea { resize: vertical; }
+.inline-moderation-form { display: flex; align-items: center; gap: .4rem; min-width: 260px; }
+.inline-moderation-form input { min-width: 160px; margin-top: 0; }
+.job-moderation-form { display: grid; grid-template-columns: 150px minmax(180px, 1fr) auto; align-items: center; gap: .4rem; min-width: 440px; }
+.job-moderation-form input { margin-top: 0; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
@@ -889,6 +906,7 @@ table.data-table tr:hover td { background: var(--surface); }
   .review-card-head .btn-sm { width: 100%; }
   .review-actions, .review-reject-form { align-items: stretch; flex-direction: column; width: 100%; }
   .review-actions .btn-sm, .review-reject-form input { width: 100%; }
+  .inline-moderation-form, .job-moderation-form { display: flex; align-items: stretch; flex-direction: column; min-width: 240px; }
   .dashboard-tab-content > .panel { padding: 1rem; }
   .pipeline-board { margin-right: -.25rem; }
   .notification-head { display: none; }

@@ -16,6 +16,11 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("operations/", views.operations, name="operations"),
     path(
+        "operations/users/<int:user_id>/message/",
+        views.operations_send_message,
+        name="operations_send_message",
+    ),
+    path(
         "operations/users/<int:user_id>/<str:action>/",
         views.operations_user_action,
         name="operations_user_action",

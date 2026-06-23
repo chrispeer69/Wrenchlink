@@ -98,6 +98,15 @@ class MarketplaceTests(TestCase):
         self.assertEqual(self.pool.technician_count, 1)
         self.assertEqual(self.pool.open_job_count, 1)
 
+    def test_profile_and_job_location_dropdowns_include_other(self):
+        self.client.force_login(self.tech_user)
+        vault_response = self.client.get(reverse("technician_vault"))
+        self.assertContains(vault_response, "Other / location not listed")
+
+        self.client.force_login(self.employer_user)
+        job_response = self.client.get(reverse("employer_job_create"))
+        self.assertContains(job_response, "Other / location not listed")
+
     def test_legacy_html_urls_redirect_to_clean_django_routes(self):
         redirects = {
             "/index.html": "/",

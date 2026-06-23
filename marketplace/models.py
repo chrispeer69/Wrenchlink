@@ -58,6 +58,11 @@ class CityPool(models.Model):
 
 
 class EmployerProfile(models.Model):
+    class VerificationStatus(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        VERIFIED = "verified", "Verified"
+        REJECTED = "rejected", "Rejected"
+
     class ShopType(models.TextChoices):
         REPAIR = "repair", "Auto Repair Shop"
         COLLISION = "collision", "Auto Body / Collision Shop"
@@ -84,7 +89,13 @@ class EmployerProfile(models.Model):
     website = models.URLField(blank=True)
     address = models.CharField(max_length=255, blank=True)
     perks = models.JSONField(default=list, blank=True)
+    verification_status = models.CharField(
+        max_length=20,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.PENDING,
+    )
     is_verified = models.BooleanField(default=False)
+    rejection_reason = models.CharField(max_length=600, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -457,6 +468,7 @@ class Notification(models.Model):
         OFFER = "offer", "Invitations and offers"
         CREDENTIAL = "credential", "Credential requests"
         JOB_MATCH = "job_match", "Matching jobs"
+        SYSTEM = "system", "Account and moderation notices"
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"

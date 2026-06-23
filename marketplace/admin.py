@@ -16,8 +16,14 @@ class CityPoolAdmin(admin.ModelAdmin):
 
 @admin.register(EmployerProfile)
 class EmployerProfileAdmin(admin.ModelAdmin):
-    list_display = ("company_name", "shop_type", "city_pool", "is_verified")
-    list_filter = ("shop_type", "is_verified", "city_pool")
+    list_display = (
+        "company_name",
+        "shop_type",
+        "city_pool",
+        "verification_status",
+        "is_verified",
+    )
+    list_filter = ("shop_type", "verification_status", "is_verified", "city_pool")
     search_fields = ("company_name", "user__email")
 
 

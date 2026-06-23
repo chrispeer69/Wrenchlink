@@ -75,6 +75,7 @@ class TechnicianRegistrationForm(StyledFormMixin, UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["city_pool"].empty_label = "Other / location not listed"
         placeholders = {
             "first_name": "First name",
             "last_name": "Last name",
@@ -135,6 +136,7 @@ class EmployerRegistrationForm(StyledFormMixin, UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["city_pool"].empty_label = "Other / location not listed"
         placeholders = {
             "first_name": "Contact first name",
             "last_name": "Contact last name",

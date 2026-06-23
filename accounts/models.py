@@ -35,3 +35,29 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.get_full_name() or self.email
+
+
+class ModerationAction(models.Model):
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="moderation_actions_taken",
+    )
+    target_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="moderation_actions_received",
+    )
+    action = models.CharField(max_length=60)
+    subject = models.CharField(max_length=180)
+    message = models.CharField(max_length=600, blank=True)
+    object_type = models.CharField(max_length=40, blank=True)
+    object_id = models.PositiveBigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.action}: {self.target_user}"
