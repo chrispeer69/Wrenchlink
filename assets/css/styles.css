@@ -121,36 +121,19 @@ nav {
 .hero-django .hero-bg {
   inset: 64px 0 0;
   background:
-    radial-gradient(circle at 84% 34%, rgba(217,119,6,.10) 0 16%, transparent 16.2%),
-    radial-gradient(circle at 84% 34%, transparent 0 26%, rgba(217,119,6,.07) 26.2% 26.5%, transparent 26.7%),
-    linear-gradient(105deg, transparent 54%, rgba(253,243,229,.72) 100%);
+    radial-gradient(ellipse 34% 48% at 82% 48%, rgba(217,119,6,.10), transparent 72%),
+    linear-gradient(105deg, transparent 58%, rgba(253,243,229,.48) 100%);
 }
 .hero-django-content {
   position: relative;
-  z-index: 2;
-  width: min(680px, 52vw);
+  z-index: 3;
+  width: min(660px, 50vw);
   padding: 2rem 0;
 }
 .hero-django h1 { max-width: 13ch; font-size: clamp(3.2rem, 6.5vw, 5.4rem); }
 .hero-django .hero-sub { max-width: 620px; }
-.hero-network { position: absolute; z-index: 2; top: 50%; right: max(2rem, calc((100vw - var(--maxw)) / 2)); width: min(460px, 36vw); transform: translateY(-48%); }
-.hero-network-frame { padding: 1.25rem; border: 1px solid rgba(22,35,63,.12); border-radius: 24px; background: rgba(255,255,255,.78); box-shadow: 0 24px 70px rgba(22,35,63,.10); backdrop-filter: blur(10px); }
-.network-heading { display: flex; flex-direction: column; gap: .2rem; padding: .15rem .3rem 1rem; border-bottom: 1px solid var(--line); }
-.network-heading span { color: var(--accent); font-size: .66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.network-heading strong { color: var(--primary); font-size: .98rem; }
-.network-map { display: block; width: 100%; height: auto; margin: .5rem 0; }
-.network-path { fill: none; stroke: url("#networkLine"); stroke-width: 2; stroke-dasharray: 5 7; }
-.network-ring { fill: none; stroke: rgba(217,119,6,.16); stroke-width: 1.5; }
-.network-ring-outer { stroke: rgba(22,35,63,.08); stroke-dasharray: 3 8; }
-.network-node rect { fill: #fff; stroke: rgba(22,35,63,.14); stroke-width: 1.5; }
-.network-node circle { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
-.network-node path { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
-.network-node text { fill: var(--primary); font-family: Inter, sans-serif; font-size: 11px; font-weight: 700; }
-.network-core circle { fill: var(--primary); stroke: rgba(217,119,6,.34); stroke-width: 8; }
-.network-core path { fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; transform: translate(-1px, -1px); }
-.network-footer { display: flex; justify-content: center; gap: 1rem; padding-top: .9rem; border-top: 1px solid var(--line); }
-.network-footer span { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted); font-size: .65rem; font-weight: 600; }
-.network-footer i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.hero-image { position: absolute; z-index: 1; top: 88px; right: max(1rem, calc((100vw - var(--maxw)) / 2 - 1rem)); bottom: 30px; left: 55%; display: flex; align-items: center; justify-content: flex-end; overflow: hidden; pointer-events: none; }
+.hero-image img { display: block; width: min(100%, 680px); height: auto; max-height: 100%; object-fit: contain; object-position: right center; filter: saturate(.93) contrast(.98); transform: rotate(-1deg); transform-origin: center; }
 .stat-item { display: flex; flex-direction: column; gap: 0.1rem; }
 .stat-num { font-size: 1.9rem; font-weight: 800; color: var(--primary); letter-spacing: -0.03em; }
 .stat-num span { color: var(--accent); }
@@ -811,10 +794,10 @@ table.data-table tr:hover td { background: var(--surface); }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
-  .hero-django-content { width: min(620px, 58vw); }
-  .hero-network { right: 1.5rem; width: min(390px, 35vw); }
-  .hero-network-frame { padding: .85rem; border-radius: 20px; }
-  .network-heading, .network-footer { display: none; }
+  .hero-django-content { width: min(570px, 55vw); }
+  .hero-django h1 { font-size: clamp(3rem, 6vw, 4.5rem); }
+  .hero-image { top: 112px; right: .75rem; bottom: 54px; left: 57%; opacity: .9; }
+  .hero-image img { width: min(100%, 540px); }
   .app-layout { grid-template-columns: 1fr; }
   .app-rail { position: static; }
   .stat-row { grid-template-columns: repeat(2, 1fr); }
@@ -836,7 +819,7 @@ table.data-table tr:hover td { background: var(--surface); }
   .hero { padding: 7rem 1.25rem 4rem; }
   .hero-django { min-height: 680px; padding: 7rem 1.5rem 4rem; }
   .hero-django-content { width: min(680px, 86vw); }
-  .hero-network { display: none; }
+  .hero-image { display: none; }
   .hero-django .hero-bg { background: radial-gradient(circle at 100% 24%, rgba(217,119,6,.10) 0 18%, transparent 18.2%), linear-gradient(120deg, transparent 48%, rgba(253,243,229,.7)); }
   .hiw-grid { grid-template-columns: 1fr; }
   .hiw-panel { display: flex; flex-direction: column; }
